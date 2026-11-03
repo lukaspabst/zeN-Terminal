@@ -14,6 +14,7 @@ import {
   ZenCodeBlock,
   ZenAlert,
   ZenIcon,
+  ZenModal,
   useZenTheme,
   ZEN_THEMES,
   capri,
@@ -53,6 +54,7 @@ export default function App() {
   const [commandInput, setCommandInput] = useState<string>('');
   const [logs, setLogs] = useState<readonly TerminalLogEntry[]>(INITIAL_LOGS);
   const [activeCodeTab, setActiveCodeTab] = useState<string>('installer');
+  const [imprintOpen, setImprintOpen] = useState<boolean>(false);
 
   const guardResult = useMemo(
     () => capri.scanPromptInjection(commandInput),
@@ -665,7 +667,104 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
             </div>
           </div>
         </section>
+
+        <footer className="pt-8 border-t border-[var(--zen-border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 zen-font-mono text-xs text-[var(--zen-ink-muted)]">
+          <div className="flex flex-wrap items-center gap-3">
+            <span>© {new Date().getFullYear()} Lukas Pabst</span>
+            <span>·</span>
+            <span>MIT License</span>
+            <span>·</span>
+            <span>Sissach, CH</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <a
+              href="https://lpabst.dev"
+              className="hover:text-[var(--zen-ink-primary)] transition-colors"
+            >
+              lpabst.dev
+            </a>
+            <a
+              href="https://ui.lpabst.dev"
+              className="hover:text-[var(--zen-ink-primary)] transition-colors"
+            >
+              ui.lpabst.dev
+            </a>
+            <a
+              href="https://github.com/lukaspabst/zeN-Terminal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--zen-ink-primary)] transition-colors"
+            >
+              GitHub
+            </a>
+            <button
+              type="button"
+              onClick={() => setImprintOpen(true)}
+              className="zen-focus-ring text-[var(--zen-accent-primary)] hover:underline cursor-pointer"
+            >
+              Imprint &amp; Privacy / Impressum
+            </button>
+          </div>
+        </footer>
       </main>
+
+      <ZenModal
+        open={imprintOpen}
+        onClose={() => setImprintOpen(false)}
+        eyebrow="LEGAL NOTICE · SWITZERLAND & EU"
+        title="Imprint & Privacy / Impressum & Datenschutz"
+        subtitle="terminal.lpabst.dev · lpabst.dev"
+        footer={
+          <ZenButton
+            variant="secondary"
+            size="sm"
+            mono
+            onClick={() => setImprintOpen(false)}
+          >
+            Close / Schließen
+          </ZenButton>
+        }
+      >
+        <div className="space-y-4 text-sm text-[var(--zen-ink-secondary)] leading-relaxed">
+          <div>
+            <div className="zen-telemetry-label text-[var(--zen-ink-primary)] mb-1">
+              RESPONSIBLE FOR CONTENT / VERANTWORTLICH FÜR DEN INHALT
+            </div>
+            <p className="text-[var(--zen-ink-primary)] font-medium">
+              Lukas Pabst
+            </p>
+            <p>4450 Sissach, Kanton Basel-Landschaft, Switzerland</p>
+            <p className="mt-1">
+              E-Mail:{' '}
+              <a
+                href="mailto:lukas.pabst@outlook.de"
+                className="text-[var(--zen-accent-primary)] hover:underline"
+              >
+                lukas.pabst@outlook.de
+              </a>
+            </p>
+          </div>
+
+          <div>
+            <div className="zen-telemetry-label text-[var(--zen-ink-primary)] mb-1">
+              PURPOSE / ZWECK DIESER WEBSITE
+            </div>
+            <p>
+              Non-commercial open-source web workbench for <code>zeN-Terminal</code> (MIT License). / Nicht-kommerzielle Open-Source-Web-Workbench für <code>zeN-Terminal</code> (MIT-Lizenz).
+            </p>
+          </div>
+
+          <div>
+            <div className="zen-telemetry-label text-[var(--zen-ink-primary)] mb-1">
+              PRIVACY &amp; HOSTING (CH-nDSG / GDPR)
+            </div>
+            <p>
+              Zero tracking cookies, zero analytics scripts, and no advertising trackers. Hosted on a dedicated Linux server at Hetzner Online GmbH (Germany/EU) behind Cloudflare DNS/TLS protection. Standard technical server logs (IP address, timestamp, requested path) are processed solely to ensure secure operation and mitigate abuse.
+            </p>
+          </div>
+        </div>
+      </ZenModal>
     </div>
   );
 }
