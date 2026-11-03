@@ -108,7 +108,7 @@ if ($ConfigureCmd) {
   $CmdInitPath = Join-Path $ZenHome "zen-cmd-init.cmd"
   $CmdLines = @(
     "@echo off",
-    "PROMPT `$E[38;2;148;163;184m[CAPRI // CMD]`$E[0m `$E[38;2;255;46;147m`$P`$E[0m`$_`$E[1;38;2;0;255;102m>`$E[0m "
+    "PROMPT `$E[38;2;148;163;184m[CAPRI // CMD]`$E[0m `$E[38;2;255;46;147m`$P`$E[0m`$_`$E[1;38;2;0;255;102m`$G`$E[0m "
   )
   Set-Content -Path $CmdInitPath -Value ($CmdLines -join "`r`n") -Encoding ASCII
   $RegPath = "HKCU:\Software\Microsoft\Command Processor"
