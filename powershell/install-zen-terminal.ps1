@@ -25,11 +25,16 @@ Copy-Item -Path (Join-Path $ScriptDir "zen-profile.ps1") -Destination (Join-Path
 Copy-Item -Path (Join-Path $ScriptDir "windows-terminal-schemes.json") -Destination (Join-Path $ZenHome "windows-terminal-schemes.json") -Force
 Set-Content -Path (Join-Path $ZenHome "active-theme.txt") -Value $Theme -Encoding UTF8
 
+$DocsDir = [Environment]::GetFolderPath("MyDocuments")
+if (-not $DocsDir) { $DocsDir = Join-Path $HOME "Documents" }
+
 $ProfilePaths = @(
   $PROFILE.CurrentUserCurrentHost,
   $PROFILE.CurrentUserAllHosts,
-  (Join-Path $HOME "Documents\PowerShell\Microsoft.PowerShell_profile.ps1"),
-  (Join-Path $HOME "Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1")
+  (Join-Path $DocsDir "PowerShell\Microsoft.PowerShell_profile.ps1"),
+  (Join-Path $DocsDir "PowerShell\profile.ps1"),
+  (Join-Path $DocsDir "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"),
+  (Join-Path $DocsDir "WindowsPowerShell\profile.ps1")
 ) | Select-Object -Unique
 
 $LoaderLines = @(
@@ -56,6 +61,7 @@ foreach ($pPath in $ProfilePaths) {
     }
   }
 }
+Write-Host "[OK] Installed zeN-Terminal into PowerShell profiles (`$PROFILE)" -ForegroundColor Green
 
 $Schemes = Get-Content (Join-Path $ScriptDir "windows-terminal-schemes.json") -Raw | ConvertFrom-Json
 $SchemeMap = @{
@@ -72,7 +78,8 @@ $ActiveSchemeName = $SchemeMap[$Theme]
 
 $WtPaths = @(
   "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json",
-  "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json"
+  "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json",
+  "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
 )
 
 foreach ($wtPath in $WtPaths) {
@@ -96,6 +103,14 @@ foreach ($wtPath in $WtPaths) {
       $wtJson.profiles.defaults | Add-Member -NotePropertyName "opacity" -NotePropertyValue 90 -Force
       $wtJson.profiles.defaults | Add-Member -NotePropertyName "useAcrylic" -NotePropertyValue $true -Force
 
+      if ($wtJson.profiles.list) {
+        foreach ($prof in $wtJson.profiles.list) {
+          if ($prof.PSObject.Properties["colorScheme"]) {
+            $prof.colorScheme = $ActiveSchemeName
+          }
+        }
+      }
+
       $wtJson | ConvertTo-Json -Depth 32 | Set-Content $wtPath -Encoding UTF8
       Write-Host "[OK] Injected 8 @zen-ui/system schemes into Windows Terminal: $wtPath" -ForegroundColor Green
     } catch {
@@ -104,22 +119,48 @@ foreach ($wtPath in $WtPaths) {
   }
 }
 
-if ($ConfigureCmd) {
-  $CmdInitPath = Join-Path $ZenHome "zen-cmd-init.cmd"
-  $CmdLines = @(
-    "@echo off",
-    "PROMPT `$E[38;2;148;163;184m[CAPRI // CMD]`$E[0m `$E[38;2;255;46;147m`$P`$E[0m`$_`$E[1;38;2;0;255;102m`$G`$E[0m "
-  )
-  Set-Content -Path $CmdInitPath -Value ($CmdLines -join "`r`n") -Encoding ASCII
-  $RegPath = "HKCU:\Software\Microsoft\Command Processor"
-  if (-not (Test-Path $RegPath)) {
-    New-Item -Path $RegPath -Force | Out-Null
+$ConsolePaths = @(
+  "HKCU:\Console",
+  "HKCU:\Console\%SystemRoot%_System32_WindowsPowerShell_v1.0_powershell.exe",
+  "HKCU:\Console\%SystemRoot%_SysWOW64_WindowsPowerShell_v1.0_powershell.exe",
+  "HKCU:\Console\%SystemRoot%_System32_cmd.exe"
+)
+foreach ($cPath in $ConsolePaths) {
+  if (-not (Test-Path -LiteralPath $cPath)) {
+    New-Item -Path $cPath -Force | Out-Null
   }
-  Set-ItemProperty -Path $RegPath -Name "AutoRun" -Value "`"$CmdInitPath`""
-  Write-Host "[OK] Configured classic cmd.exe AutoRun prompt in $RegPath" -ForegroundColor Green
+  Set-ItemProperty -LiteralPath $cPath -Name "VirtualTerminalLevel" -Value 1 -Type DWord -ErrorAction SilentlyContinue
+  Set-ItemProperty -LiteralPath $cPath -Name "ColorTable00" -Value 0x00080505 -Type DWord -ErrorAction SilentlyContinue
+  Set-ItemProperty -LiteralPath $cPath -Name "ColorTable05" -Value 0x00080505 -Type DWord -ErrorAction SilentlyContinue
+  Set-ItemProperty -LiteralPath $cPath -Name "ScreenColors" -Value 0x07 -Type DWord -ErrorAction SilentlyContinue
+}
+Write-Host "[OK] Overwrote classic Windows Console (conhost.exe) dark-blue palette & enabled 24-bit TrueColor VT" -ForegroundColor Green
+
+if (Get-AppxPackage -Name "Microsoft.WindowsTerminal" -ErrorAction SilentlyContinue) {
+  $StartupKey = "HKCU:\Console\%%Startup"
+  if (-not (Test-Path -LiteralPath $StartupKey)) {
+    New-Item -Path $StartupKey -Force | Out-Null
+  }
+  Set-ItemProperty -LiteralPath $StartupKey -Name "DelegationConsole" -Value "{2EACA947-7F5F-4CFA-BA87-8F7FBEEFBE69}" -Type String
+  Set-ItemProperty -LiteralPath $StartupKey -Name "DelegationTerminal" -Value "{E12CFF52-A866-4C77-9A90-F570A7AA2C6B}" -Type String
+  Write-Host "[OK] Set Windows Terminal as default host when launching cmd.exe or powershell.exe" -ForegroundColor Green
 }
 
+. (Join-Path $ZenHome "zen-profile.ps1")
+Write-ZenCmdAutorunScript -ThemeId $Theme
+
+$CmdInitPath = Join-Path $ZenHome "zen-cmd-init.cmd"
+$RegPath = "HKCU:\Software\Microsoft\Command Processor"
+if (-not (Test-Path $RegPath)) {
+  New-Item -Path $RegPath -Force | Out-Null
+}
+Set-ItemProperty -Path $RegPath -Name "AutoRun" -Value "`"$CmdInitPath`""
+Write-Host "[OK] Configured cmd.exe AutoRun prompt, banner & commands in $RegPath" -ForegroundColor Green
+
 Write-Host ""
-Write-Host "[CAPRI // ZEN-TERMINAL] Installed with theme '$Theme'!" -ForegroundColor Cyan
-Write-Host "  Restart PowerShell or run: . `$PROFILE" -ForegroundColor Yellow
-Write-Host "  Switch themes anytime via: zen-theme obsidian-gold | zen-themes | capri-guard '<text>'" -ForegroundColor Gray
+Write-Host "[CAPRI // ZEN-TERMINAL] Installed globally for PowerShell, CMD & Windows Terminal (theme: '$Theme')!" -ForegroundColor Cyan
+Write-Host "  Commands available in BOTH PowerShell and CMD:" -ForegroundColor Yellow
+Write-Host "    zen-themes                   -> List all 8 @zen-ui/system themes" -ForegroundColor Gray
+Write-Host "    zen-theme <id>               -> Switch theme across PowerShell, CMD & Windows Terminal" -ForegroundColor Gray
+Write-Host "    capri-guard <payload>        -> Scan text for SQLi, XSS & Prompt Injection" -ForegroundColor Gray
+Write-Host "    zen-banner                   -> Render the zeN-Terminal telemetry header" -ForegroundColor Gray
