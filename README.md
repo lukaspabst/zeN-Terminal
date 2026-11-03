@@ -6,7 +6,7 @@
 
 ## 1. Install into Windows PowerShell & Windows Terminal
 
-Run from `c:\Users\Lukas\IdeaProjects\zeN-Terminal`:
+Run from the repository root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\powershell\install-zen-terminal.ps1 -Theme blackwall-crimson -ConfigureCmd

@@ -287,7 +287,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       return (
         <div className="zen-font-mono text-xs sm:text-sm space-y-0.5">
           <div className="text-[var(--zen-ink-muted)]">
-            ⟦<span className="text-[var(--zen-accent-primary)] font-bold">CAPRI // {theme.toUpperCase()}</span>⟧══⟦<span className="text-[var(--zen-accent-secondary)]">GUARD: ARMED</span>⟧══⟦<span className="text-[var(--zen-ink-primary)]">C:\Users\Lukas\IdeaProjects\zeN-Terminal</span>⟧
+            ⟦<span className="text-[var(--zen-accent-primary)] font-bold">CAPRI // {theme.toUpperCase()}</span>⟧══⟦<span className="text-[var(--zen-accent-secondary)]">GUARD: ARMED</span>⟧══⟦<span className="text-[var(--zen-ink-primary)]">~\Projects\zeN-Terminal</span>⟧
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[var(--zen-accent-primary)] font-bold">╚══❯</span>

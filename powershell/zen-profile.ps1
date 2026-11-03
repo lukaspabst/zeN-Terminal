@@ -280,4 +280,7 @@ function global:prompt {
   return "`n$line1`n$line2"
 }
 
-Show-ZenBanner
+$cmdArgs = [Environment]::GetCommandLineArgs()
+if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected -and ($cmdArgs -notcontains "-Command") -and ($cmdArgs -notcontains "-c") -and ($cmdArgs -notcontains "-File")) {
+  Show-ZenBanner
+}
