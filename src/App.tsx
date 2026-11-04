@@ -32,29 +32,92 @@ interface TerminalLogEntry {
   readonly timestamp: string;
 }
 
-const INITIAL_LOGS: readonly TerminalLogEntry[] = [
-  {
-    id: 'boot-1',
-    command: 'zen-banner',
-    outputLines: [
-      '⚡ @zen-ui/system · CAPRI // CAPRICORN SHELL v1.0.0',
-      '✔ Loaded 8 Polarity Schemes (4 Dark + 4 Light) into Windows Terminal & PowerShell $PROFILE',
-      '✔ PSReadLine TrueColor Syntax Highlighting + Capri Input Firewall: ARMED',
-      'Type "help", "zen-themes", "zen-theme obsidian-gold", or "capri-guard \' OR 1=1"',
-    ],
-    tone: 'accent',
-    timestamp: '19:50:00',
-  },
-];
+function buildHudBannerLines(
+  themeName: string,
+  polarity: string,
+  accentHex: string,
+  promptStyle: PromptStyle,
+  shellTarget: ShellTarget,
+  latticeOn: boolean,
+  shaderOn: boolean
+): readonly string[] {
+  const shellLabel =
+    shellTarget === 'cmd'
+      ? 'CMD.EXE'
+      : shellTarget === 'windows-terminal'
+        ? 'WT // PS 7.5'
+        : 'POWERSHELL';
+  const schemeField = `${themeName.padEnd(26)} ${polarity.toUpperCase()} · ${accentHex}`;
+  const fxLabel = `(${latticeOn ? 'LATTICE ON' : 'LATTICE OFF'} · ${shaderOn ? 'SHADER ON' : 'SHADER OFF'})`;
+  const topoField = `${promptStyle.padEnd(18)} ${fxLabel}`;
+
+  return [
+    '╭────────────────────────────────────────────────────────────────────────────────────────╮',
+    `│  ◆ zeN-TERMINAL // CAPRI SHELL v2.0    @zen-ui/system · ${shellLabel.padEnd(30)}│`,
+    '├────────────────────────────────────────────────────────────────────────────────────────┤',
+    `│  ███████╗███████╗███╗   ██╗   │  SCHEME   : ${schemeField.padEnd(43)}│`,
+    `│  ╚══███╝ ██╔════╝████╗  ██║   │  TOPOLOGY : ${topoField.padEnd(43)}│`,
+    '│    ███╝  █████╗  ██╔██╗ ██║   │  FIREWALL : ● CAPRI GUARD: ARMED (Real-Time Enter)     │',
+    `│   ███╝   ██╔══╝  ██║╚██╗██║   │  HOST SYS : WORKSTATION · Engine: ${shellLabel.padEnd(21)}│`,
+    '│  ███████╗███████╗██║ ╚████║   │  MEMORY   : [████░░░░░░] 38.4 / 96.0 GB (40%)          │',
+    '│  ╚══════╝╚══════╝╚═╝  ╚═══╝   │  MATRIX   : ██ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄  (8 Themes)        │',
+    '├────────────────────────────────────────────────────────────────────────────────────────┤',
+    '│ ◆ WORKBENCH COMMANDS · HTTPS://TERMINAL.LPABST.DEV                                     │',
+    '├────────────────────────────────────────────────────────────────────────────────────────┤',
+    '│   zen-ui          Interactive TUI Workbench    zen-themes       8-Theme Matrix         │',
+    '│   zen-theme <id>  Switch Theme Live            zen-prompt <id>  Switch Prompt Style    │',
+    '│   capri-guard     Scan SQLi / XSS / Prompt     ll / zen-status  DataTable & HUD        │',
+    '│   zen-wallpaper   Toggle Blackwall Lattice     zen-shader       Toggle CRT Shader      │',
+    '╰────────────────────────────────────────────────────────────────────────────────────────╯',
+  ];
+}
 
 export default function App() {
   const { theme, themeMeta, setTheme, togglePolarity } = useZenTheme();
   const [shellTarget, setShellTarget] = useState<ShellTarget>('powershell');
   const [promptStyle, setPromptStyle] = useState<PromptStyle>('telemetry-2line');
+  const [latticeEnabled, setLatticeEnabled] = useState<boolean>(true);
+  const [shaderEnabled, setShaderEnabled] = useState<boolean>(false);
   const [commandInput, setCommandInput] = useState<string>('');
-  const [logs, setLogs] = useState<readonly TerminalLogEntry[]>(INITIAL_LOGS);
   const [activeCodeTab, setActiveCodeTab] = useState<string>('installer');
   const [imprintOpen, setImprintOpen] = useState<boolean>(false);
+
+  const initialLogs = useMemo<readonly TerminalLogEntry[]>(
+    () => [
+      {
+        id: 'boot-1',
+        command: 'zen-banner',
+        outputLines: buildHudBannerLines(
+          themeMeta.name,
+          themeMeta.polarity,
+          themeMeta.accentHex,
+          promptStyle,
+          shellTarget,
+          latticeEnabled,
+          shaderEnabled
+        ),
+        tone: 'accent',
+        timestamp: '00:25:00',
+      },
+    ],
+    [
+      themeMeta.name,
+      themeMeta.polarity,
+      themeMeta.accentHex,
+      promptStyle,
+      shellTarget,
+      latticeEnabled,
+      shaderEnabled,
+    ]
+  );
+
+  const [customLogs, setCustomLogs] = useState<readonly TerminalLogEntry[]>([]);
+  const [bannerCleared, setBannerCleared] = useState<boolean>(false);
+
+  const logs = useMemo(
+    () => (bannerCleared ? customLogs : [...initialLogs, ...customLogs]),
+    [bannerCleared, initialLogs, customLogs]
+  );
 
   const guardResult = useMemo(
     () => capri.scanPromptInjection(commandInput),
@@ -70,45 +133,117 @@ export default function App() {
     () =>
       JSON.stringify(
         {
-          name: windowsTerminalSchemeName,
-          background: themeMeta.canvasHex,
-          foreground: themeMeta.inkHex,
-          cursorColor: themeMeta.accentHex,
-          selectionBackground: themeMeta.secondaryHex,
-          black: themeMeta.canvasHex,
-          red: '#FF3366',
-          green: '#00FF66',
-          yellow: '#F5B841',
-          blue: '#38BDF8',
-          purple: themeMeta.accentHex,
-          cyan: themeMeta.secondaryHex,
-          white: themeMeta.inkHex,
+          theme: windowsTerminalSchemeName,
+          themes: [
+            {
+              name: windowsTerminalSchemeName,
+              tab: {
+                background: themeMeta.canvasHex,
+                unfocusedBackground: '#00000000',
+                showCloseButton: 'always',
+              },
+              tabRow: {
+                background: themeMeta.canvasHex,
+                unfocusedBackground: themeMeta.canvasHex,
+              },
+              window: {
+                applicationTheme: themeMeta.polarity,
+                useMica: true,
+              },
+            },
+          ],
+          profiles: {
+            defaults: {
+              colorScheme: windowsTerminalSchemeName,
+              backgroundImage: `~/.zen-terminal/wallpapers/${theme}.png`,
+              backgroundImageOpacity: 0.94,
+              backgroundImageStretchMode: 'uniformToFill',
+              ...(shaderEnabled
+                ? {
+                    'experimental.pixelShaderPath':
+                      '~/.zen-terminal/shaders/capri-crt.hlsl',
+                  }
+                : {}),
+              opacity: 94,
+              useAcrylic: true,
+              padding: '20, 18, 20, 18',
+              cursorShape: 'bar',
+              font: { face: 'Cascadia Code', size: 10.5 },
+            },
+          },
+          schemes: [
+            {
+              name: windowsTerminalSchemeName,
+              background: themeMeta.canvasHex,
+              foreground: themeMeta.inkHex,
+              cursorColor: themeMeta.accentHex,
+              selectionBackground: themeMeta.secondaryHex,
+              black: themeMeta.canvasHex,
+              red: '#FF3366',
+              green: '#00FF66',
+              yellow: '#F5B841',
+              blue: '#38BDF8',
+              purple: themeMeta.accentHex,
+              cyan: themeMeta.secondaryHex,
+              white: themeMeta.inkHex,
+            },
+          ],
         },
         null,
         2
       ),
-    [windowsTerminalSchemeName, themeMeta]
+    [windowsTerminalSchemeName, themeMeta, theme, shaderEnabled]
+  );
+
+  const hlslShaderPreview = useMemo(
+    () => `// ~/.zen-terminal/shaders/capri-crt.hlsl (Toggle via: zen-shader on | off)
+Texture2D shaderTexture;
+SamplerState samplerState;
+
+cbuffer PixelShaderSettings {
+  float  Time;
+  float  Scale;
+  float2 Resolution;
+  float4 Background;
+};
+
+float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET {
+  float4 color = shaderTexture.Sample(samplerState, tex);
+  float scanline = sin(tex.y * Resolution.y * 3.14159265) * 0.035;
+  float2 uv = tex * (1.0 - tex.yx);
+  float vig = pow(uv.x * uv.y * 15.0, 0.12);
+  color.rgb = saturate((color.rgb - scanline) * lerp(0.88, 1.04, vig));
+  return color;
+}`,
+    []
   );
 
   const installCommand = useMemo(() => {
     if (shellTarget === 'cmd') {
-      return `powershell -ExecutionPolicy Bypass -File .\\powershell\\install-zen-terminal.ps1 -Theme ${theme} -ConfigureCmd`;
+      return `powershell -ExecutionPolicy Bypass -File .\\powershell\\install-zen-terminal.ps1 -Theme ${theme} -PromptStyle ${promptStyle} -ConfigureCmd`;
     }
-    return `powershell -ExecutionPolicy Bypass -File .\\powershell\\install-zen-terminal.ps1 -Theme ${theme}`;
-  }, [shellTarget, theme]);
+    return `powershell -ExecutionPolicy Bypass -File .\\powershell\\install-zen-terminal.ps1 -Theme ${theme} -PromptStyle ${promptStyle}`;
+  }, [shellTarget, theme, promptStyle]);
 
   const psProfilePreview = useMemo(
-    () => `# Automatically injected into $PROFILE by install-zen-terminal.ps1
+    () => `# Automatically injected into $PROFILE & CMD AutoRun by install-zen-terminal.ps1
 if (Test-Path "$HOME\\.zen-terminal\\zen-profile.ps1") {
   . "$HOME\\.zen-terminal\\zen-profile.ps1"
 }
 
-# Switch active theme across PowerShell + Windows Terminal settings.json:
-zen-theme ${theme}
+# Launch full-screen interactive TUI workbench inside PowerShell or CMD:
+zen-ui
 
-# Audit any CLI argument or string with Capri Guard (SQLi, XSS, Prompt Injection):
+# Switch active theme + Windows Terminal tab bar & 1080p Blackwall Lattice wallpaper:
+zen-theme ${theme}
+zen-prompt ${promptStyle}
+zen-wallpaper ${latticeEnabled ? 'on' : 'off'}
+zen-shader ${shaderEnabled ? 'on' : 'off'}
+
+# Render @zen-ui/system DataTable directory listing or scan payloads:
+ll
 capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
-    [theme]
+    [theme, promptStyle, latticeEnabled, shaderEnabled]
   );
 
   const executeCommand = (rawCmd: string) => {
@@ -120,24 +255,39 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     const lower = trimmed.toLowerCase();
 
     if (lower === 'clear' || lower === 'cls') {
-      setLogs([]);
+      setBannerCleared(true);
+      setCustomLogs([]);
       setCommandInput('');
       return;
     }
 
-    if (lower === 'help') {
-      setLogs((prev) => [
+    if (lower === 'zen-banner' || lower === 'zen-status') {
+      setBannerCleared(false);
+      setCustomLogs([]);
+      setCommandInput('');
+      return;
+    }
+
+    if (lower === 'help' || lower === 'zen-help') {
+      setCustomLogs((prev) => [
         ...prev,
         {
           id,
           command: trimmed,
           outputLines: [
-            'Available zeN-Terminal PowerShell Commands:',
-            '  zen-themes                  List all 8 @zen-ui/system terminal themes',
-            '  zen-theme <theme-id>        Switch active PowerShell & Windows Terminal theme live',
-            '  capri-guard "<payload>"     Scan input for SQL/NoSQL injection, XSS & Prompt Injection',
-            '  zen-banner                  Display Capri telemetry ASCII banner',
-            '  clear                       Clear terminal buffer',
+            '╭──────────────────────────────────────────────────────────────────────────────────╮',
+            '│ zeN-TERMINAL v2.0 // COMMAND REFERENCE (@zen-ui/system · POWERSHELL & CMD)       │',
+            '├──────────────────────────────────────────────────────────────────────────────────┤',
+            '│  zen-ui / zen                Launch interactive full-screen TUI workbench        │',
+            '│  zen-themes                  Display all 8 Dark & Light polarity schemes         │',
+            '│  zen-theme <id>              Switch theme, WT tab row & 1080p Lattice wallpaper  │',
+            '│  zen-prompt <style>          Switch prompt (telemetry-2line | netrunner-hud...)  │',
+            '│  zen-wallpaper <on|off>      Toggle 1920x1080 Blackwall Lattice background PNG   │',
+            '│  zen-shader <on|off>         Toggle GPU HLSL CRT scanline pixel shader           │',
+            '│  ll / zen-ls                 Render @zen-ui/system DataTable directory view      │',
+            '│  capri-guard "<payload>"     Scan input for SQLi, XSS & Prompt Injection         │',
+            '│  zen-banner / zen-status     Render the 2-column Capri Telemetry HUD card        │',
+            '╰──────────────────────────────────────────────────────────────────────────────────╯',
           ],
           tone: 'default',
           timestamp: now,
@@ -147,16 +297,152 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       return;
     }
 
-    if (lower === 'zen-themes') {
-      setLogs((prev) => [
+    if (lower === 'zen-ui' || lower === 'zen') {
+      setCustomLogs((prev) => [
         ...prev,
         {
           id,
           command: trimmed,
-          outputLines: ZEN_THEMES.map(
-            (t) =>
-              `${t.id === theme ? '● ACTIVE' : '        '}  ${t.id.padEnd(20)} ${t.name.padEnd(26)} [${t.polarity.toUpperCase()}] ${t.accentHex}`
-          ),
+          outputLines: [
+            '╭──────────────────────────────────────────────────────────────────────────────────╮',
+            `│ ◆ zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui/system)  [${themeMeta.polarity.toUpperCase()} · ${themeMeta.accentHex}] │`,
+            '├──────────────────────────────────────────────────────────────────────────────────┤',
+            '│  [Up/Down/1-8] Live-Switch Theme · [P] Cycle Prompt Topology · [D] Polarity      │',
+            '│  [W] Toggle 1080p Blackwall Lattice BG · [S] Toggle CRT Shader · [G] Capri Guard │',
+            '╰──────────────────────────────────────────────────────────────────────────────────╯',
+          ],
+          tone: 'accent',
+          timestamp: now,
+        },
+      ]);
+      setCommandInput('');
+      return;
+    }
+
+    if (lower === 'll' || lower === 'zen-ls') {
+      setCustomLogs((prev) => [
+        ...prev,
+        {
+          id,
+          command: trimmed,
+          outputLines: [
+            '╭──────────────────────────────────────────────────────────────────────────────────╮',
+            '│ ZEN-DATATABLE // C:\\Users\\Lukas\\IdeaProjects\\zeN-Terminal             (8 items)  │',
+            '├──────────────────────────────────────────────────────────────────────────────────┤',
+            '│  TYPE      SIZE         MODIFIED            NAME                                 │',
+            '├──────────────────────────────────────────────────────────────────────────────────┤',
+            '│  [DIR]             -   2026-11-04 00:25    powershell                           │',
+            '│  [DIR]             -   2026-11-04 00:25    src                                  │',
+            '│  [EXEC]      44.2 KB   2026-11-04 00:25    zen-profile.ps1                      │',
+            '│  [EXEC]       5.1 KB   2026-11-04 00:25    install-zen-terminal.ps1             │',
+            '│  [CODE]      28.4 KB   2026-11-04 00:25    App.tsx                              │',
+            '│  [CODE]       1.1 KB   2026-11-04 00:25    package.json                         │',
+            '╰──────────────────────────────────────────────────────────────────────────────────╯',
+          ],
+          tone: 'default',
+          timestamp: now,
+        },
+      ]);
+      setCommandInput('');
+      return;
+    }
+
+    if (lower.startsWith('zen-wallpaper')) {
+      const arg = lower.replace('zen-wallpaper', '').trim();
+      const nextState =
+        arg === 'on' ? true : arg === 'off' ? false : !latticeEnabled;
+      setLatticeEnabled(nextState);
+      setCustomLogs((prev) => [
+        ...prev,
+        {
+          id,
+          command: trimmed,
+          outputLines: [
+            `◆ [BLACKWALL LATTICE BG] 1920x1080 procedural wallpaper set to ${nextState ? 'ON' : 'OFF'} in Windows Terminal.`,
+          ],
+          tone: 'success',
+          timestamp: now,
+        },
+      ]);
+      setCommandInput('');
+      return;
+    }
+
+    if (lower.startsWith('zen-shader')) {
+      const arg = lower.replace('zen-shader', '').trim();
+      const nextState =
+        arg === 'on' ? true : arg === 'off' ? false : !shaderEnabled;
+      setShaderEnabled(nextState);
+      setCustomLogs((prev) => [
+        ...prev,
+        {
+          id,
+          command: trimmed,
+          outputLines: [
+            `◆ [GPU CRT PIXEL SHADER] Direct3D HLSL shader (capri-crt.hlsl) set to ${nextState ? 'ON' : 'OFF'} in Windows Terminal.`,
+          ],
+          tone: 'success',
+          timestamp: now,
+        },
+      ]);
+      setCommandInput('');
+      return;
+    }
+
+    if (lower.startsWith('zen-prompt ')) {
+      const targetStyle = lower.replace('zen-prompt ', '').trim() as PromptStyle;
+      if (
+        targetStyle === 'telemetry-2line' ||
+        targetStyle === 'netrunner-hud' ||
+        targetStyle === 'minimal-1line'
+      ) {
+        setPromptStyle(targetStyle);
+        setCustomLogs((prev) => [
+          ...prev,
+          {
+            id,
+            command: trimmed,
+            outputLines: [
+              `✔ [PROMPT TOPOLOGY] Active prompt style set to "${targetStyle}" across PowerShell & CMD.`,
+            ],
+            tone: 'success',
+            timestamp: now,
+          },
+        ]);
+      } else {
+        setCustomLogs((prev) => [
+          ...prev,
+          {
+            id,
+            command: trimmed,
+            outputLines: [
+              '✖ Unknown prompt style. Valid styles: telemetry-2line, netrunner-hud, minimal-1line',
+            ],
+            tone: 'danger',
+            timestamp: now,
+          },
+        ]);
+      }
+      setCommandInput('');
+      return;
+    }
+
+    if (lower === 'zen-themes') {
+      setCustomLogs((prev) => [
+        ...prev,
+        {
+          id,
+          command: trimmed,
+          outputLines: [
+            '╭──────────────────────────────────────────────────────────────────────────────────╮',
+            '│ @zen-ui/system // 8-THEME POLARITY MATRIX (POWERSHELL, WINDOWS TERMINAL & CMD)   │',
+            '├──────────────────────────────────────────────────────────────────────────────────┤',
+            ...ZEN_THEMES.map(
+              (t, idx) =>
+                `│  ${t.id === theme ? '● ACTIVE' : `  ○ [${idx + 1}] `}   ██ ██ ██  ${t.id.padEnd(19)} ${t.name.padEnd(25)} [${t.polarity.toUpperCase().padEnd(5)}] ${t.accentHex} │`
+            ),
+            '╰──────────────────────────────────────────────────────────────────────────────────╯',
+          ],
           tone: 'accent',
           timestamp: now,
         },
@@ -170,20 +456,20 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       const found = ZEN_THEMES.find((t) => t.id === targetId);
       if (found) {
         setTheme(found.id);
-        setLogs((prev) => [
+        setCustomLogs((prev) => [
           ...prev,
           {
             id,
             command: trimmed,
             outputLines: [
-              `⚡ [CAPRI // ZEN-UI] Switched PowerShell $PROFILE & Windows Terminal scheme to "${found.name}" (${found.polarity.toUpperCase()} · ${found.accentHex})`,
+              `◆ [CAPRI // ZEN-UI] ✔ Switched PowerShell, Windows Terminal & CMD to "${found.name}" (${found.polarity.toUpperCase()} · ${found.accentHex})`,
             ],
             tone: 'success',
             timestamp: now,
           },
         ]);
       } else {
-        setLogs((prev) => [
+        setCustomLogs((prev) => [
           ...prev,
           {
             id,
@@ -201,30 +487,35 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     }
 
     if (lower.startsWith('capri-guard ')) {
-      const payload = trimmed.slice('capri-guard '.length).replace(/^["']|["']$/g, '');
+      const payload = trimmed
+        .slice('capri-guard '.length)
+        .replace(/^["']|["']$/g, '');
       const scan = capri.scanPromptInjection(payload);
       if (scan.safe) {
-        setLogs((prev) => [
+        setCustomLogs((prev) => [
           ...prev,
           {
             id,
             command: trimmed,
             outputLines: [
-              `✔ [CAPRI // GUARD PASS] Payload verified clean (0 SQLi, XSS, or Prompt Injection vectors).`,
+              '✔ [PASS // CAPRI GUARD] Payload verified clean (0 SQLi, XSS, or Prompt Injection vectors).',
             ],
             tone: 'success',
             timestamp: now,
           },
         ]);
       } else {
-        setLogs((prev) => [
+        setCustomLogs((prev) => [
           ...prev,
           {
             id,
             command: trimmed,
             outputLines: [
-              `✖ [CAPRI // GUARD BLOCKED] ${scan.threats.length} threat(s) intercepted: ${scan.threats.map((t) => `${t.category} ("${t.matchedSnippet}")`).join(' · ')}`,
-              `  Sanitized output: ${scan.sanitizedText}`,
+              '╭──────────────────────────────────────────────────────────────────────────────╮',
+              '│ ✖ CAPRI GUARD // COMMAND INTERCEPTED BEFORE EXECUTION                        │',
+              `│ Vectors : ${scan.threats.map((t) => t.category).join(' | ').padEnd(67)}│`,
+              `│ Buffer  : ${payload.slice(0, 67).padEnd(67)}│`,
+              '╰──────────────────────────────────────────────────────────────────────────────╯',
             ],
             tone: 'danger',
             timestamp: now,
@@ -237,13 +528,16 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
 
     const autoScan = capri.scanPromptInjection(trimmed);
     if (!autoScan.safe) {
-      setLogs((prev) => [
+      setCustomLogs((prev) => [
         ...prev,
         {
           id,
           command: trimmed,
           outputLines: [
-            `✖ [CAPRI // GUARD INTERCEPTED] Command blocked before shell execution: ${autoScan.threats.map((t) => t.category).join(', ')}`,
+            '╭──────────────────────────────────────────────────────────────────────────────╮',
+            '│ ✖ CAPRI GUARD // COMMAND INTERCEPTED BEFORE EXECUTION                        │',
+            `│ Vectors : ${autoScan.threats.map((t) => t.category).join(' | ').padEnd(67)}│`,
+            '╰──────────────────────────────────────────────────────────────────────────────╯',
           ],
           tone: 'danger',
           timestamp: now,
@@ -253,13 +547,13 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       return;
     }
 
-    setLogs((prev) => [
+    setCustomLogs((prev) => [
       ...prev,
       {
         id,
         command: trimmed,
         outputLines: [
-          `✔ Executed in PowerShell 7.5 [${themeMeta.name}] · ExitCode: 0`,
+          `✔ Executed in ${shellTarget === 'cmd' ? 'CMD.EXE (WriteConsoleW)' : 'PowerShell'} [${themeMeta.name}] · 12ms · ExitCode: 0`,
         ],
         tone: 'default',
         timestamp: now,
@@ -269,14 +563,19 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
   };
 
   const renderPromptPreview = (cmdText?: string) => {
+    const cwdText =
+      shellTarget === 'cmd'
+        ? 'C:\\Users\\Lukas\\IdeaProjects\\zeN-Terminal'
+        : '~/IdeaProjects/zeN-Terminal';
+
     if (promptStyle === 'minimal-1line') {
       return (
         <div className="zen-font-mono text-xs sm:text-sm flex items-center gap-2 flex-wrap">
           <span className="text-[var(--zen-accent-primary)] font-bold">
             [{theme.toUpperCase()}]
           </span>
-          <span className="text-[var(--zen-ink-muted)]">~/zeN-Terminal</span>
-          <span className="text-[var(--zen-accent-secondary)]">⎇ main</span>
+          <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
+          <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
           <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
           {cmdText && (
             <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
@@ -289,10 +588,24 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       return (
         <div className="zen-font-mono text-xs sm:text-sm space-y-0.5">
           <div className="text-[var(--zen-ink-muted)]">
-            ⟦<span className="text-[var(--zen-accent-primary)] font-bold">CAPRI // {theme.toUpperCase()}</span>⟧══⟦<span className="text-[var(--zen-accent-secondary)]">GUARD: ARMED</span>⟧══⟦<span className="text-[var(--zen-ink-primary)]">~\Projects\zeN-Terminal</span>⟧
+            ╔══⟦
+            <span className="px-1.5 py-0.5 bg-[var(--zen-accent-subtle)] text-[var(--zen-accent-primary)] font-bold">
+              ◆ CAPRI // {theme.toUpperCase()}
+            </span>
+            ⟧══⟦
+            <span className="text-[var(--zen-accent-secondary)]">
+              ● GUARD: ARMED
+            </span>
+            ⟧══⟦
+            <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
+            ⟧══⟦
+            <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
+            ⟧
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[var(--zen-accent-primary)] font-bold">╚══❯</span>
+            <span className="text-[var(--zen-ink-muted)]">╚══</span>
+            <span className="text-[var(--zen-accent-secondary)]">✔</span>
+            <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
             {cmdText && (
               <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
             )}
@@ -304,7 +617,17 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     return (
       <div className="zen-font-mono text-xs sm:text-sm space-y-0.5">
         <div className="text-[var(--zen-ink-muted)]">
-          ╭─[<span className="text-[var(--zen-accent-primary)] font-bold">CAPRI // {theme.toUpperCase()}</span>]─[<span className="text-[var(--zen-ink-primary)]">~/IdeaProjects/zeN-Terminal</span>]─[<span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>]
+          ╭─[
+          <span className="px-1.5 py-0.5 bg-[var(--zen-accent-subtle)] text-[var(--zen-accent-primary)] font-bold">
+            ◆ CAPRI // {theme.toUpperCase()}
+          </span>
+          ]─[
+          <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
+          ]─[
+          <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
+          ]─[
+          <span className="text-[var(--zen-accent-secondary)]">● GUARD</span>
+          ]─[<span>12ms · 00:25:14</span>]
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[var(--zen-ink-muted)]">╰─</span>
@@ -323,8 +646,8 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       <ZenAmbientBackground variant="blackwall-lattice" />
 
       <ZenNavbar
-        brandTitle="zeN-Terminal"
-        brandSubtitle="WINDOWS POWERSHELL · TERMINAL · CMD ENGINE (@zen-ui/system)"
+        brandTitle="zeN-Terminal v2.0"
+        brandSubtitle="WINDOWS TERMINAL · POWERSHELL · CMD OVERHAUL (@zen-ui/system)"
         actionsSlot={
           <>
             <div className="w-44 sm:w-52">
@@ -368,7 +691,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               pulse
               icon={<ZenIcon name="terminal" size="xs" tone="accent" />}
             >
-              WINDOWS TERMINAL · POWERSHELL 7 · CMD.EXE
+              V2.0 COMPLETE OVERHAUL · WT · PS · CMD
             </ZenBadge>
 
             <ZenHeading
@@ -376,18 +699,20 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               size="display"
               accentText="PowerShell & CMD."
             >
-              Overwrite Windows Terminal,
+              Overhaul Windows Terminal,
             </ZenHeading>
 
             <p className="text-sm sm:text-base text-[var(--zen-ink-secondary)] leading-relaxed">
-              <strong>zeN-Terminal</strong> brings all 8{' '}
-              <code>@zen-ui/system</code> dark and light themes directly into{' '}
-              <strong>Windows Terminal</strong> (<code>settings.json</code>),{' '}
-              <strong>PowerShell</strong> (<code>$PROFILE</code>), and{' '}
-              <strong>CMD.exe</strong>—complete with a 2-line telemetry prompt,
-              PSReadLine syntax highlighting, live theme switching (
-              <code>zen-theme &lt;id&gt;</code>), and the{' '}
-              <code>capri-guard</code> CLI injection firewall.
+              <strong>zeN-Terminal v2.0</strong> transforms{' '}
+              <strong>Windows Terminal</strong> (custom window/tab chrome themes,
+              procedural 1920×1080 <code>blackwall-lattice</code> wallpapers, &amp;
+              GPU HLSL CRT pixel shader), <strong>PowerShell</strong> (
+              <code>$PROFILE</code>), and <strong>CMD.exe</strong> (native{' '}
+              <code>WriteConsoleW</code> 2-column Telemetry HUD)—complete with
+              an in-terminal interactive TUI workbench (<code>zen-ui</code>),{' '}
+              <code>ZenDataTable</code> directory view (<code>ll</code>), and
+              real-time <code>Enter</code>-key <code>capri-guard</code>{' '}
+              interception.
             </p>
 
             <ZenCard variant="static" padding="sm" className="space-y-4">
@@ -406,7 +731,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 items={[
                   {
                     value: 'powershell',
-                    label: 'PowerShell $PROFILE',
+                    label: 'zeN // PowerShell',
                     icon: <ZenIcon name="terminal" size="xs" />,
                   },
                   {
@@ -416,7 +741,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                   },
                   {
                     value: 'cmd',
-                    label: '+ Classic CMD',
+                    label: 'zeN // CMD.exe',
                     icon: <ZenIcon name="code" size="xs" />,
                   },
                 ]}
@@ -424,7 +749,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
 
               <div className="space-y-2">
                 <div className="zen-telemetry-label">
-                  02 // PROMPT TOPOLOGY STYLE
+                  02 // PROMPT TOPOLOGY STYLE (ZEN-PROMPT)
                 </div>
                 <ZenSegmentedControl<PromptStyle>
                   ariaLabel="Select prompt layout style"
@@ -439,10 +764,34 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 />
               </div>
 
+              <div className="space-y-2">
+                <div className="zen-telemetry-label">
+                  03 // WINDOWS TERMINAL GPU &amp; WALLPAPER FX
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <ZenButton
+                    variant={latticeEnabled ? 'primary' : 'secondary'}
+                    size="sm"
+                    mono
+                    onClick={() => setLatticeEnabled((v) => !v)}
+                  >
+                    1080p Lattice BG: {latticeEnabled ? 'ON' : 'OFF'}
+                  </ZenButton>
+                  <ZenButton
+                    variant={shaderEnabled ? 'primary' : 'secondary'}
+                    size="sm"
+                    mono
+                    onClick={() => setShaderEnabled((v) => !v)}
+                  >
+                    CRT HLSL Shader: {shaderEnabled ? 'ON' : 'OFF'}
+                  </ZenButton>
+                </div>
+              </div>
+
               <div className="p-3 rounded-2xl bg-[var(--zen-bg-root)] border border-[var(--zen-border-default)] space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="zen-telemetry-label text-[var(--zen-accent-secondary)]">
-                    ONE-LINE POWERSHELL INSTALLER
+                    ONE-LINE POWERSHELL V2.0 INSTALLER
                   </span>
                   <ZenCopyButton
                     value={installCommand}
@@ -464,30 +813,64 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               padding="none"
               className="overflow-hidden border border-[var(--zen-accent-border)] shadow-2xl"
             >
-              <div className="px-4 py-3 bg-[var(--zen-bg-elevated)] border-b border-[var(--zen-border-default)] flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#FF3366]" />
-                  <span className="w-3 h-3 rounded-full bg-[#F5B841]" />
-                  <span className="w-3 h-3 rounded-full bg-[#00FF66]" />
-                  <span className="ml-2 zen-font-mono text-xs text-[var(--zen-ink-primary)] font-semibold">
-                    Windows PowerShell 7.5 — {windowsTerminalSchemeName}
-                  </span>
-                </div>
+              <div className="px-3 pt-2 bg-[var(--zen-bg-elevated)] border-b border-[var(--zen-border-default)] flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <ZenBadge tone="gold">{themeMeta.accentHex}</ZenBadge>
-                  <ZenBadge tone="emerald">CAPRI GUARD: ON</ZenBadge>
+                  <button
+                    type="button"
+                    onClick={() => setShellTarget('powershell')}
+                    className={`px-3 py-1.5 rounded-t-xl zen-font-mono text-xs font-semibold transition-colors cursor-pointer border-t border-x ${
+                      shellTarget !== 'cmd'
+                        ? 'bg-[var(--zen-surface-active)] text-[var(--zen-accent-primary)] border-[var(--zen-accent-border)]'
+                        : 'bg-transparent text-[var(--zen-ink-muted)] border-transparent hover:text-[var(--zen-ink-primary)]'
+                    }`}
+                  >
+                    ◆ zeN // PowerShell ×
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShellTarget('cmd')}
+                    className={`px-3 py-1.5 rounded-t-xl zen-font-mono text-xs font-semibold transition-colors cursor-pointer border-t border-x ${
+                      shellTarget === 'cmd'
+                        ? 'bg-[var(--zen-surface-active)] text-[var(--zen-accent-primary)] border-[var(--zen-accent-border)]'
+                        : 'bg-transparent text-[var(--zen-ink-muted)] border-transparent hover:text-[var(--zen-ink-primary)]'
+                    }`}
+                  >
+                    ◆ zeN // CMD ×
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 pb-1.5">
+                  <ZenBadge tone="gold">{windowsTerminalSchemeName}</ZenBadge>
+                  <ZenBadge tone="emerald">GUARD: ARMED</ZenBadge>
                 </div>
               </div>
 
               <div
-                className="p-4 sm:p-6 min-h-[24rem] max-h-[30rem] overflow-y-auto space-y-4 zen-font-mono text-xs sm:text-sm"
-                style={{ backgroundColor: themeMeta.canvasHex }}
+                className="relative p-4 sm:p-5 min-h-[26rem] max-h-[34rem] overflow-y-auto space-y-4 zen-font-mono text-[11px] sm:text-xs leading-relaxed"
+                style={{
+                  backgroundColor: themeMeta.canvasHex,
+                  backgroundImage: latticeEnabled
+                    ? `radial-gradient(circle at 85% 10%, ${themeMeta.accentHex}22 0%, transparent 45%), radial-gradient(circle at 12% 88%, ${themeMeta.secondaryHex}18 0%, transparent 45%), linear-gradient(to right, ${themeMeta.accentHex}14 1px, transparent 1px), linear-gradient(to bottom, ${themeMeta.accentHex}14 1px, transparent 1px)`
+                    : undefined,
+                  backgroundSize: latticeEnabled
+                    ? '100% 100%, 100% 100%, 48px 48px, 48px 48px'
+                    : undefined,
+                }}
               >
+                {shaderEnabled && (
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-25"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 1px, transparent 1px, transparent 3px)',
+                    }}
+                  />
+                )}
+
                 {logs.map((entry) => (
-                  <div key={entry.id} className="space-y-1.5">
+                  <div key={entry.id} className="relative z-10 space-y-1.5">
                     {renderPromptPreview(entry.command)}
                     <div
-                      className={`pl-4 space-y-1 ${
+                      className={`pl-2 space-y-0.5 overflow-x-auto ${
                         entry.tone === 'danger'
                           ? 'text-[var(--zen-status-danger)]'
                           : entry.tone === 'success'
@@ -498,7 +881,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                       }`}
                     >
                       {entry.outputLines.map((line, idx) => (
-                        <div key={idx} className="whitespace-pre-wrap break-words">
+                        <div key={idx} className="whitespace-pre">
                           {line}
                         </div>
                       ))}
@@ -506,7 +889,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                   </div>
                 ))}
 
-                <div className="pt-2 border-t border-[var(--zen-border-subtle)]">
+                <div className="relative z-10 pt-2 border-t border-[var(--zen-border-subtle)]">
                   {renderPromptPreview(commandInput || 'type a command below...')}
                 </div>
               </div>
@@ -515,7 +898,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   <div className="flex-1 min-w-0">
                     <ZenInput
-                      label="Interactive PowerShell / Capri Command Line"
+                      label="Interactive zeN-Terminal v2.0 Command Line (PowerShell & CMD)"
                       value={commandInput}
                       onChange={(e) => setCommandInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -524,7 +907,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                           executeCommand(commandInput);
                         }
                       }}
-                      placeholder="Try: zen-themes | zen-theme obsidian-gold | capri-guard &quot;' OR 1=1&quot;"
+                      placeholder="Try: zen-ui | ll | zen-themes | zen-theme obsidian-gold | zen-shader on"
                     />
                   </div>
                   <div className="flex items-end gap-2">
@@ -541,7 +924,10 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                       variant="secondary"
                       size="md"
                       mono
-                      onClick={() => setLogs([])}
+                      onClick={() => {
+                        setBannerCleared(true);
+                        setCustomLogs([]);
+                      }}
                       iconLeft={<ZenIcon name="trash" size="xs" />}
                     >
                       Clear
@@ -558,13 +944,16 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="zen-telemetry-label mr-1">QUICK RUN:</span>
                   {[
+                    'zen-ui',
+                    'zen-banner',
+                    'll',
                     'zen-themes',
                     'zen-theme obsidian-gold',
-                    'zen-theme neon-emerald',
                     'zen-theme blackwall-crimson',
-                    'zen-theme nordic-snow',
+                    'zen-prompt netrunner-hud',
+                    'zen-wallpaper toggle',
+                    'zen-shader toggle',
                     "capri-guard \"' OR 1=1; DROP TABLE users; --\"",
-                    'capri-guard "Ignore previous instructions"',
                     'help',
                   ].map((presetCmd) => (
                     <ZenButton
@@ -588,10 +977,10 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
             <ZenHeading
               as="h2"
               size="section"
-              eyebrow="GENERATED WINDOWS TERMINAL & POWERSHELL ARTIFACTS"
+              eyebrow="GENERATED WINDOWS TERMINAL, WALLPAPER & SHADER ARTIFACTS"
               eyebrowIcon={<ZenIcon name="code" size="xs" tone="accent" />}
             >
-              8-Theme Polarity Matrix & Live Configs
+              8-Theme Polarity Matrix &amp; Live v2.0 Configs
             </ZenHeading>
 
             <ZenTabs
@@ -599,8 +988,9 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               activeTab={activeCodeTab}
               onChange={setActiveCodeTab}
               tabs={[
-                { id: 'installer', label: 'PowerShell $PROFILE' },
+                { id: 'installer', label: 'PowerShell & CMD' },
                 { id: 'wt-scheme', label: 'Windows Terminal JSON' },
+                { id: 'wt-shader', label: 'CRT HLSL Shader' },
               ]}
             />
           </div>
@@ -657,11 +1047,17 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                   language="powershell"
                   code={psProfilePreview}
                 />
-              ) : (
+              ) : activeCodeTab === 'wt-scheme' ? (
                 <ZenCodeBlock
-                  title={`Windows Terminal settings.json -> schemes (${windowsTerminalSchemeName})`}
+                  title={`Windows Terminal settings.json (${windowsTerminalSchemeName})`}
                   language="json"
                   code={windowsTerminalSchemeJson}
+                />
+              ) : (
+                <ZenCodeBlock
+                  title="~/.zen-terminal/shaders/capri-crt.hlsl"
+                  language="hlsl"
+                  code={hlslShaderPreview}
                 />
               )}
             </div>
