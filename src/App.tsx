@@ -19,7 +19,7 @@ import {
   ZEN_THEMES,
   capri,
   type ZenThemeId,
-} from '@zen-ui/system';
+} from '@zen-ui-capri/system';
 
 type ShellTarget = 'powershell' | 'windows-terminal' | 'cmd';
 type PromptStyle = 'telemetry-2line' | 'minimal-1line' | 'netrunner-hud';

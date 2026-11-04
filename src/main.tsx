@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ZenThemeProvider } from '@zen-ui/system';
-import '@zen-ui/system/tokens.css';
+import { ZenThemeProvider } from '@zen-ui-capri/system';
+import '@zen-ui-capri/system/tokens.css';
 import './index.css';
 import App from './App.tsx';
 

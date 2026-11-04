@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@source '../node_modules/@zen-ui/system';
+@source '../node_modules/@zen-ui-capri/system';
 
 @layer base {
   html {

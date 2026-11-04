@@ -11,7 +11,7 @@
     "install:terminal": "powershell -ExecutionPolicy Bypass -File ./powershell/install-zen-terminal.ps1"
   },
   "dependencies": {
-    "@zen-ui/system": "https://github.com/lukaspabst/zeN-UI/releases/download/latest/zen-ui-system.tgz",
+    "@zen-ui-capri/system": "^1.1.1",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
