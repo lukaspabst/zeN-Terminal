@@ -53,7 +53,7 @@ function buildHudBannerLines(
 
   return [
     '╭────────────────────────────────────────────────────────────────────────────────────────╮',
-    `│  ◆ zeN-TERMINAL // CAPRI SHELL v2.0    @zen-ui/system · ${shellLabel.padEnd(30)}│`,
+    `│  ◆ zeN-TERMINAL // CAPRI SHELL         @zen-ui/system · ${shellLabel.padEnd(30)}│`,
     '├────────────────────────────────────────────────────────────────────────────────────────┤',
     `│  ███████╗███████╗███╗   ██╗   │  SCHEME   : ${schemeField.padEnd(43)}│`,
     `│  ╚══███╝ ██╔════╝████╗  ██║   │  TOPOLOGY : ${topoField.padEnd(43)}│`,
@@ -276,7 +276,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
           command: trimmed,
           outputLines: [
             '╭──────────────────────────────────────────────────────────────────────────────────╮',
-            '│ zeN-TERMINAL v2.0 // COMMAND REFERENCE (@zen-ui/system · POWERSHELL & CMD)       │',
+            '│ zeN-TERMINAL // COMMAND REFERENCE (@zen-ui/system · POWERSHELL & CMD)            │',
             '├──────────────────────────────────────────────────────────────────────────────────┤',
             '│  zen-ui / zen                Launch interactive full-screen TUI workbench        │',
             '│  zen-themes                  Display all 8 Dark & Light polarity schemes         │',
@@ -646,8 +646,8 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
       <ZenAmbientBackground variant="blackwall-lattice" />
 
       <ZenNavbar
-        brandTitle="zeN-Terminal v2.0"
-        brandSubtitle="WINDOWS TERMINAL · POWERSHELL · CMD OVERHAUL (@zen-ui/system)"
+        brandTitle="zeN-Terminal"
+        brandSubtitle="WINDOWS TERMINAL · POWERSHELL · CMD ENGINE (@zen-ui/system)"
         actionsSlot={
           <>
             <div className="w-44 sm:w-52">
@@ -691,7 +691,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               pulse
               icon={<ZenIcon name="terminal" size="xs" tone="accent" />}
             >
-              V2.0 COMPLETE OVERHAUL · WT · PS · CMD
+              WINDOWS TERMINAL · POWERSHELL · CMD.EXE
             </ZenBadge>
 
             <ZenHeading
@@ -703,7 +703,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
             </ZenHeading>
 
             <p className="text-sm sm:text-base text-[var(--zen-ink-secondary)] leading-relaxed">
-              <strong>zeN-Terminal v2.0</strong> transforms{' '}
+              <strong>zeN-Terminal</strong> transforms{' '}
               <strong>Windows Terminal</strong> (custom window/tab chrome themes,
               procedural 1920×1080 <code>blackwall-lattice</code> wallpapers, &amp;
               GPU HLSL CRT pixel shader), <strong>PowerShell</strong> (
@@ -791,7 +791,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               <div className="p-3 rounded-2xl bg-[var(--zen-bg-root)] border border-[var(--zen-border-default)] space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="zen-telemetry-label text-[var(--zen-accent-secondary)]">
-                    ONE-LINE POWERSHELL V2.0 INSTALLER
+                    ONE-LINE POWERSHELL INSTALLER
                   </span>
                   <ZenCopyButton
                     value={installCommand}
@@ -898,7 +898,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   <div className="flex-1 min-w-0">
                     <ZenInput
-                      label="Interactive zeN-Terminal v2.0 Command Line (PowerShell & CMD)"
+                      label="Interactive zeN-Terminal Command Line (PowerShell & CMD)"
                       value={commandInput}
                       onChange={(e) => setCommandInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -980,7 +980,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               eyebrow="GENERATED WINDOWS TERMINAL, WALLPAPER & SHADER ARTIFACTS"
               eyebrowIcon={<ZenIcon name="code" size="xs" tone="accent" />}
             >
-              8-Theme Polarity Matrix &amp; Live v2.0 Configs
+              8-Theme Polarity Matrix &amp; Live Configs
             </ZenHeading>
 
             <ZenTabs

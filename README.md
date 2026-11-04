@@ -1,4 +1,4 @@
-# `zeN-Terminal` v2.0 // Complete Windows Terminal, PowerShell & CMD Overhaul (`@zen-ui/system`)
+# `zeN-Terminal` // Windows Terminal, PowerShell & CMD Theme Engine (`@zen-ui/system`)
 
 **`zeN-Terminal`** transforms **Windows Terminal (`settings.json`)**, **Windows PowerShell (`$PROFILE`)**, and **Windows `cmd.exe`** into a full `@zen-ui/system` (`CAPRI // CAPRICORN`) environment—complete with custom Windows Terminal window/tab chrome themes, procedurally generated 1920×1080 Blackwall Lattice ambient wallpapers, an optional GPU HLSL CRT pixel shader, a 2-column Telemetry HUD dashboard, 3 switchable prompt topologies, an in-terminal interactive TUI workbench (`zen-ui`), and real-time `Enter`-key CLI firewall protection (`capri-guard`).
 

@@ -138,7 +138,7 @@ if (-not (Test-Path $RegPath)) {
 Set-ItemProperty -Path $RegPath -Name "AutoRun" -Value "`"$CmdInitPath`""
 
 Show-ZenBanner
-Write-Host "  [OK] Installed zeN-Terminal v2.0 Complete Overhaul (PowerShell, CMD & Windows Terminal)" -ForegroundColor Green
+Write-Host "  [OK] Installed zeN-Terminal (PowerShell, CMD & Windows Terminal)" -ForegroundColor Green
 Write-Host "  [OK] Generated 8 @zen-ui/system Blackwall Lattice 1920x1080 wallpapers & Window Themes" -ForegroundColor Green
 Write-Host "  [OK] Type 'zen-ui' in PowerShell or CMD to launch the full-screen interactive workbench!" -ForegroundColor Cyan
 Write-Host ""

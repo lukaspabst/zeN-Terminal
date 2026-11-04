@@ -611,7 +611,7 @@ function Format-ZenHudBannerLines {
   $wallState   = if ($Global:ZenWallpaperEnabled) { "LATTICE ON" } else { "LATTICE OFF" }
   $shaderState = if ($Global:ZenShaderEnabled) { "SHADER ON" } else { "SHADER OFF" }
 
-  $hdrText = " $pillAccent $diamond zeN-TERMINAL // CAPRI SHELL v2.0 $rst  $pillSurf @zen-ui/system $mid $ShellName $rst"
+  $hdrText = " $pillAccent $diamond zeN-TERMINAL // CAPRI SHELL $rst  $pillSurf @zen-ui/system $mid $ShellName $rst"
   $divText = " $acB$diamond WORKBENCH COMMANDS$rst $mu$mid HTTPS://TERMINAL.LPABST.DEV$rst"
 
   $lines = @(
