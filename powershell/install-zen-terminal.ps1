@@ -140,6 +140,6 @@ Set-ItemProperty -Path $RegPath -Name "AutoRun" -Value "`"$CmdInitPath`""
 
 Show-ZenBanner
 Write-Host "  [OK] Installed zeN-Terminal (PowerShell, CMD & Windows Terminal)" -ForegroundColor Green
-Write-Host "  [OK] Generated 8 @zen-ui/system Blackwall Lattice 1920x1080 wallpapers & Window Themes" -ForegroundColor Green
+Write-Host "  [OK] Generated 8 @zen-ui/system Blackwall Lattice 4K (3840x2160) 1:1 wallpapers & Window Themes" -ForegroundColor Green
 Write-Host "  [OK] Type 'zen-ui' in PowerShell or CMD to launch the full-screen interactive workbench!" -ForegroundColor Cyan
 Write-Host ""

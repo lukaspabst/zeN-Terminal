@@ -106,7 +106,7 @@ export default function App() {
               suppressApplicationTitle: false,
               backgroundImage: `~/.zen-terminal/wallpapers/${theme}.png`,
               backgroundImageOpacity: 0.94,
-              backgroundImageStretchMode: 'uniformToFill',
+              backgroundImageStretchMode: 'none',
               backgroundImageAlignment: 'topRight',
               ...(shaderEnabled
                 ? {

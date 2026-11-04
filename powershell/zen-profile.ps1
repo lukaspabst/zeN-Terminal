@@ -212,10 +212,11 @@ cbuffer PixelShaderSettings {
 
 float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET {
   float4 color = shaderTexture.Sample(samplerState, tex);
-  float scanline = sin(tex.y * Resolution.y * 3.14159265) * 0.035;
+  float headerMask = smoothstep(44.0, 58.0, tex.y * Resolution.y);
+  float scanline = sin(tex.y * Resolution.y * 3.14159265) * 0.032 * headerMask;
   float2 uv = tex * (1.0 - tex.yx);
-  float vig = pow(uv.x * uv.y * 15.0, 0.12);
-  color.rgb = saturate((color.rgb - scanline) * lerp(0.88, 1.04, vig));
+  float vig = lerp(1.0, pow(uv.x * uv.y * 15.0, 0.12), headerMask);
+  color.rgb = saturate((color.rgb - scanline) * lerp(0.90, 1.03, vig));
   return color;
 }
 "@
@@ -317,38 +318,37 @@ function Export-ZenWallpapers {
     return
   }
 
-  $diamond = [char]0x25C6
-  $dot     = [char]0x25CF
-
   foreach ($key in $Global:ZenThemes.Keys) {
     $t = $Global:ZenThemes[$key]
     $outPath = Join-Path $wallDir "$($t.Id).png"
     if ((-not $Force) -and (Test-Path $outPath)) { continue }
 
-    $cParts = $t.CanvasRgb -split ";"
-    $aParts = $t.AccentRgb -split ";"
-    $sParts = $t.SecondaryRgb -split ";"
-    $mParts = $t.MutedRgb -split ";"
+    $cParts  = $t.CanvasRgb -split ";"
+    $aParts  = $t.AccentRgb -split ";"
+    $sParts  = $t.SecondaryRgb -split ";"
     $sfParts = $t.SurfaceRgb -split ";"
 
-    $w = 1920
-    $h = 1080
+    $w = 3840
+    $h = 2160
     $bmp = New-Object System.Drawing.Bitmap($w, $h)
+    $bmp.SetResolution(96, 96)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
+    $g.SmoothingMode      = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    $g.PixelOffsetMode    = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $g.InterpolationMode  = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.TextRenderingHint  = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
 
     $bgColor = [System.Drawing.Color]::FromArgb(255, [int]$cParts[0], [int]$cParts[1], [int]$cParts[2])
     $g.Clear($bgColor)
 
     $isDark = ($t.Polarity -eq "DARK")
     $glowAlpha1 = if ($isDark) { 42 } else { 24 }
-    $glowAlpha2 = if ($isDark) { 26 } else { 18 }
+    $glowAlpha2 = if ($isDark) { 28 } else { 18 }
     $minorAlpha = if ($isDark) { 13 } else { 15 }
     $majorAlpha = if ($isDark) { 30 } else { 30 }
 
     $path1 = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path1.AddEllipse(980, -320, 1280, 960)
+    $path1.AddEllipse(($w - 980), -280, 1280, 920)
     $pgb1 = New-Object System.Drawing.Drawing2D.PathGradientBrush($path1)
     $pgb1.CenterColor = [System.Drawing.Color]::FromArgb($glowAlpha1, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2])
     $pgb1.SurroundColors = @([System.Drawing.Color]::FromArgb(0, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]))
@@ -357,7 +357,7 @@ function Export-ZenWallpapers {
     $path1.Dispose()
 
     $path2 = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path2.AddEllipse(-340, 420, 1180, 920)
+    $path2.AddEllipse(($w - 1900), 260, 1280, 960)
     $pgb2 = New-Object System.Drawing.Drawing2D.PathGradientBrush($path2)
     $pgb2.CenterColor = [System.Drawing.Color]::FromArgb($glowAlpha2, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2])
     $pgb2.SurroundColors = @([System.Drawing.Color]::FromArgb(0, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]))
@@ -367,82 +367,100 @@ function Export-ZenWallpapers {
 
     $minorPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb($minorAlpha, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1)
     $majorPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb($majorAlpha, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1)
-    $crossPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(60, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]), 1)
+    $crossPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(62, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]), 1)
 
-    for ($x = 0; $x -le $w; $x += 48) {
-      if ($x % 240 -eq 0) {
+    for ($x = $w; $x -ge 0; $x -= 48) {
+      if ((($w - $x) % 240) -eq 0) {
         $g.DrawLine($majorPen, $x, 0, $x, $h)
       } else {
         $g.DrawLine($minorPen, $x, 0, $x, $h)
       }
     }
     for ($y = 0; $y -le $h; $y += 48) {
-      if ($y % 240 -eq 0) {
+      if (($y % 240) -eq 0) {
         $g.DrawLine($majorPen, 0, $y, $w, $y)
       } else {
         $g.DrawLine($minorPen, 0, $y, $w, $y)
       }
     }
 
-    for ($x = 240; $x -lt $w; $x += 240) {
+    for ($x = ($w - 240); $x -gt 0; $x -= 240) {
       for ($y = 240; $y -lt $h; $y += 240) {
         $g.DrawLine($crossPen, $x - 5, $y, $x + 5, $y)
         $g.DrawLine($crossPen, $x, $y - 5, $x, $y + 5)
       }
     }
 
-    $topGlowRect = New-Object System.Drawing.Rectangle(0, 0, $w, 34)
+    $topGlowRect = New-Object System.Drawing.Rectangle(0, 0, $w, 30)
     $topGlowBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
       $topGlowRect,
-      [System.Drawing.Color]::FromArgb(78, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]),
+      [System.Drawing.Color]::FromArgb(72, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]),
       [System.Drawing.Color]::FromArgb(0, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]),
       [System.Drawing.Drawing2D.LinearGradientMode]::Vertical
     )
     $g.FillRectangle($topGlowBrush, $topGlowRect)
     $topGlowBrush.Dispose()
 
-    $framePen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(75, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 2)
-    $g.DrawRectangle($framePen, 1, 1, ($w - 3), ($h - 3))
-    $framePen.Dispose()
-
-    $hudPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(200, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 3)
+    $hudPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(215, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 2)
     $g.DrawLine($hudPen, 0, 1, $w, 1)
+    $g.DrawLine($hudPen, ($w - 1), 0, ($w - 1), $h)
 
     try {
-      $pillFont = New-Object System.Drawing.Font("Consolas", 10.5, [System.Drawing.FontStyle]::Bold)
-      $sf = New-Object System.Drawing.StringFormat
-      $sf.Alignment = [System.Drawing.StringAlignment]::Center
+      $fontFamily = try {
+        New-Object System.Drawing.FontFamily("Cascadia Code")
+      } catch {
+        New-Object System.Drawing.FontFamily("Consolas")
+      }
+      $pillFont = New-Object System.Drawing.Font($fontFamily, 11, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Point)
+      $sf = New-Object System.Drawing.StringFormat([System.Drawing.StringFormat]::GenericTypographic)
+      $sf.Alignment = [System.Drawing.StringAlignment]::Near
       $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-      $p1Text = "$diamond $($t.Name)"
-      $p2Text = "$dot GUARD: ARMED"
+      $p1Text = $t.Name
+      $p2Text = "GUARD: ARMED"
 
-      $p1Measured = $g.MeasureString($p1Text, $pillFont)
-      $p2Measured = $g.MeasureString($p2Text, $pillFont)
+      $p1Measured = $g.MeasureString($p1Text, $pillFont, 1000, $sf)
+      $p2Measured = $g.MeasureString($p2Text, $pillFont, 1000, $sf)
 
       $pillH = 30
-      $pillY = 14
-      $p2W = [int][math]::Ceiling($p2Measured.Width) + 28
-      $p1W = [int][math]::Ceiling($p1Measured.Width) + 28
-      $p2X = $w - $p2W - 24
+      $pillY = 12
+      $p2W = [int][math]::Ceiling($p2Measured.Width) + 42
+      $p1W = [int][math]::Ceiling($p1Measured.Width) + 44
+      $p2X = $w - $p2W - 20
       $p1X = $p2X - $p1W - 10
 
       $pill1Path = New-ZenPillPath -X $p1X -Y $pillY -Width $p1W -Height $pillH
-      $pill1Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(225, [int]$sfParts[0], [int]$sfParts[1], [int]$sfParts[2]))
-      $pill1Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(210, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1.6)
+      $pill1Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, [int]$sfParts[0], [int]$sfParts[1], [int]$sfParts[2]))
+      $pill1Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(240, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1.8)
       $pill1TextBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]))
       $g.FillPath($pill1Bg, $pill1Path)
       $g.DrawPath($pill1Border, $pill1Path)
-      $rect1 = New-Object System.Drawing.RectangleF($p1X, ($pillY + 1), $p1W, $pillH)
+
+      $dCx = $p1X + 18
+      $dCy = $pillY + 15
+      $diamondPts = @(
+        (New-Object System.Drawing.Point($dCx, ($dCy - 6))),
+        (New-Object System.Drawing.Point(($dCx + 6), $dCy)),
+        (New-Object System.Drawing.Point($dCx, ($dCy + 6))),
+        (New-Object System.Drawing.Point(($dCx - 6), $dCy))
+      )
+      $g.FillPolygon($pill1TextBrush, $diamondPts)
+
+      $rect1 = New-Object System.Drawing.RectangleF(($p1X + 30), ($pillY + 1), ($p1W - 34), $pillH)
       $g.DrawString($p1Text, $pillFont, $pill1TextBrush, $rect1, $sf)
 
       $pill2Path = New-ZenPillPath -X $p2X -Y $pillY -Width $p2W -Height $pillH
-      $pill2Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(225, 6, 42, 26))
-      $pill2Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(210, 16, 185, 129), 1.6)
+      $pill2Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 6, 38, 24))
+      $pill2Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(240, 16, 185, 129), 1.8)
       $pill2TextBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 52, 211, 153))
       $g.FillPath($pill2Bg, $pill2Path)
       $g.DrawPath($pill2Border, $pill2Path)
-      $rect2 = New-Object System.Drawing.RectangleF($p2X, ($pillY + 1), $p2W, $pillH)
+
+      $dotX = $p2X + 14
+      $dotY = $pillY + 11
+      $g.FillEllipse($pill2TextBrush, $dotX, $dotY, 8, 8)
+
+      $rect2 = New-Object System.Drawing.RectangleF(($p2X + 28), ($pillY + 1), ($p2W - 32), $pillH)
       $g.DrawString($p2Text, $pillFont, $pill2TextBrush, $rect2, $sf)
 
       $pill1Path.Dispose()
@@ -455,13 +473,7 @@ function Export-ZenWallpapers {
       $pill2TextBrush.Dispose()
       $sf.Dispose()
       $pillFont.Dispose()
-
-      $font = New-Object System.Drawing.Font("Consolas", 9, [System.Drawing.FontStyle]::Bold)
-      $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(95, [int]$mParts[0], [int]$mParts[1], [int]$mParts[2]))
-      $label = "zeN-TERMINAL // $($t.Name.ToUpper()) // @zen-ui/system"
-      $g.DrawString($label, $font, $brush, ($w - 420), ($h - 42))
-      $brush.Dispose()
-      $font.Dispose()
+      $fontFamily.Dispose()
     } catch {}
 
     $hudPen.Dispose()
@@ -576,7 +588,7 @@ function Sync-ZenWindowsTerminalSettings {
         if ($Global:ZenWallpaperEnabled -and (Test-Path $wallpaperPath)) {
           $defs | Add-Member -NotePropertyName "backgroundImage" -NotePropertyValue $wallpaperPath -Force
           $defs | Add-Member -NotePropertyName "backgroundImageOpacity" -NotePropertyValue 0.94 -Force
-          $defs | Add-Member -NotePropertyName "backgroundImageStretchMode" -NotePropertyValue "uniformToFill" -Force
+          $defs | Add-Member -NotePropertyName "backgroundImageStretchMode" -NotePropertyValue "none" -Force
           $defs | Add-Member -NotePropertyName "backgroundImageAlignment" -NotePropertyValue "topRight" -Force
         } else {
           if ($defs.PSObject.Properties["backgroundImage"]) {
@@ -1328,7 +1340,7 @@ function Start-ZenWorkbench {
       Write-Host "  $mu$tl$line$tr$rst"
       Write-Host (Format-ZenBoxRow -Content "  $pillAccent $bolt zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui/system) $rst  $pillSurf $($cur.Polarity) $mid $($cur.AccentHex) $rst" -InnerWidth $W -BorderColor $mu)
       Write-Host "  $mu$ml$line$mr$rst"
-      Write-Host (Format-ZenBoxRow -Content "  $acB`01 // 8-THEME POLARITY MATRIX$rst $mu(Use [Up/Down] or [1-8] to live-switch, [D] Polarity)$rst" -InnerWidth $W -BorderColor $mu)
+      Write-Host (Format-ZenBoxRow -Content "  ${acB}01 // 8-THEME POLARITY MATRIX$rst $mu(Use [Up/Down] or [1-8] to live-switch, [D] Polarity)$rst" -InnerWidth $W -BorderColor $mu)
       Write-Host (Format-ZenBoxRow -Content "" -InnerWidth $W -BorderColor $mu)
 
       for ($i = 0; $i -lt $keys.Count; $i++) {
@@ -1345,15 +1357,15 @@ function Start-ZenWorkbench {
         Write-Host (Format-ZenBoxRow -Content $rowStr -InnerWidth $W -BorderColor $mu)
       }
 
-      $wallBadge   = if ($Global:ZenWallpaperEnabled) { "$sc`ON$rst" } else { "$mu`OFF$rst" }
-      $shaderBadge = if ($Global:ZenShaderEnabled) { "$sc`ON$rst" } else { "$mu`OFF$rst" }
-      $guardBadge  = if ($Global:CapriGuardAuto) { "$sc`ARMED$rst" } else { "$mu`BYPASSED$rst" }
+      $wallBadge   = if ($Global:ZenWallpaperEnabled) { "${sc}ON$rst" } else { "${mu}OFF$rst" }
+      $shaderBadge = if ($Global:ZenShaderEnabled) { "${sc}ON$rst" } else { "${mu}OFF$rst" }
+      $guardBadge  = if ($Global:CapriGuardAuto) { "${sc}ARMED$rst" } else { "${mu}BYPASSED$rst" }
 
       Write-Host "  $mu$ml$line$mr$rst"
-      Write-Host (Format-ZenBoxRow -Content "  $acB`02 // PROMPT TOPOLOGY & VISUAL FX$rst" -InnerWidth $W -BorderColor $mu)
+      Write-Host (Format-ZenBoxRow -Content "  ${acB}02 // PROMPT TOPOLOGY & VISUAL FX$rst" -InnerWidth $W -BorderColor $mu)
       Write-Host (Format-ZenBoxRow -Content "   Prompt Style : $pillSurf $($Global:ActiveZenPromptStyle) $rst   Lattice BG : $wallBadge   CRT Shader : $shaderBadge   Guard : $guardBadge" -InnerWidth $W -BorderColor $mu)
       Write-Host "  $mu$ml$line$mr$rst"
-      Write-Host (Format-ZenBoxRow -Content "  $acB`03 // CAPRI GUARD FIREWALL STATUS$rst" -InnerWidth $W -BorderColor $mu)
+      Write-Host (Format-ZenBoxRow -Content "  ${acB}03 // CAPRI GUARD FIREWALL STATUS$rst" -InnerWidth $W -BorderColor $mu)
       Write-Host (Format-ZenBoxRow -Content "   $in$lastScanMessage$rst" -InnerWidth $W -BorderColor $mu)
       Write-Host "  $mu$ml$line$mr$rst"
       Write-Host (Format-ZenBoxRow -Content "  $pillSurf [Up/Down/1-8] $rst Theme  $pillSurf [P] $rst Prompt  $pillSurf [D] $rst Polarity  $pillSurf [W] $rst Lattice  $pillSurf [S] $rst Shader  $pillSurf [G] $rst Guard  $pillSurf [Q] $rst Quit" -InnerWidth $W -BorderColor $mu)
