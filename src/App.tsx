@@ -30,46 +30,7 @@ interface TerminalLogEntry {
   readonly outputLines: readonly string[];
   readonly tone: 'default' | 'accent' | 'success' | 'danger';
   readonly timestamp: string;
-}
-
-function buildHudBannerLines(
-  themeName: string,
-  polarity: string,
-  accentHex: string,
-  promptStyle: PromptStyle,
-  shellTarget: ShellTarget,
-  latticeOn: boolean,
-  shaderOn: boolean
-): readonly string[] {
-  const shellLabel =
-    shellTarget === 'cmd'
-      ? 'CMD.EXE'
-      : shellTarget === 'windows-terminal'
-        ? 'WT // PS 7.5'
-        : 'POWERSHELL';
-  const schemeField = `${themeName.padEnd(26)} ${polarity.toUpperCase()} · ${accentHex}`;
-  const fxLabel = `(${latticeOn ? 'LATTICE ON' : 'LATTICE OFF'} · ${shaderOn ? 'SHADER ON' : 'SHADER OFF'})`;
-  const topoField = `${promptStyle.padEnd(18)} ${fxLabel}`;
-
-  return [
-    '╭────────────────────────────────────────────────────────────────────────────────────────╮',
-    `│  ◆ zeN-TERMINAL // CAPRI SHELL         @zen-ui/system · ${shellLabel.padEnd(30)}│`,
-    '├────────────────────────────────────────────────────────────────────────────────────────┤',
-    `│  ███████╗███████╗███╗   ██╗   │  SCHEME   : ${schemeField.padEnd(43)}│`,
-    `│  ╚══███╝ ██╔════╝████╗  ██║   │  TOPOLOGY : ${topoField.padEnd(43)}│`,
-    '│    ███╝  █████╗  ██╔██╗ ██║   │  FIREWALL : ● CAPRI GUARD: ARMED (Real-Time Enter)     │',
-    `│   ███╝   ██╔══╝  ██║╚██╗██║   │  HOST SYS : WORKSTATION · Engine: ${shellLabel.padEnd(21)}│`,
-    '│  ███████╗███████╗██║ ╚████║   │  MEMORY   : [████░░░░░░] 38.4 / 96.0 GB (40%)          │',
-    '│  ╚══════╝╚══════╝╚═╝  ╚═══╝   │  MATRIX   : ██ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄ ▄▄  (8 Themes)        │',
-    '├────────────────────────────────────────────────────────────────────────────────────────┤',
-    '│ ◆ WORKBENCH COMMANDS · HTTPS://TERMINAL.LPABST.DEV                                     │',
-    '├────────────────────────────────────────────────────────────────────────────────────────┤',
-    '│   zen-ui          Interactive TUI Workbench    zen-themes       8-Theme Matrix         │',
-    '│   zen-theme <id>  Switch Theme Live            zen-prompt <id>  Switch Prompt Style    │',
-    '│   capri-guard     Scan SQLi / XSS / Prompt     ll / zen-status  DataTable & HUD        │',
-    '│   zen-wallpaper   Toggle Blackwall Lattice     zen-shader       Toggle CRT Shader      │',
-    '╰────────────────────────────────────────────────────────────────────────────────────────╯',
-  ];
+  readonly isHudBanner?: boolean;
 }
 
 export default function App() {
@@ -87,28 +48,13 @@ export default function App() {
       {
         id: 'boot-1',
         command: 'zen-banner',
-        outputLines: buildHudBannerLines(
-          themeMeta.name,
-          themeMeta.polarity,
-          themeMeta.accentHex,
-          promptStyle,
-          shellTarget,
-          latticeEnabled,
-          shaderEnabled
-        ),
+        outputLines: [],
         tone: 'accent',
         timestamp: '00:25:00',
+        isHudBanner: true,
       },
     ],
-    [
-      themeMeta.name,
-      themeMeta.polarity,
-      themeMeta.accentHex,
-      promptStyle,
-      shellTarget,
-      latticeEnabled,
-      shaderEnabled,
-    ]
+    []
   );
 
   const [customLogs, setCustomLogs] = useState<readonly TerminalLogEntry[]>([]);
@@ -134,11 +80,12 @@ export default function App() {
       JSON.stringify(
         {
           theme: windowsTerminalSchemeName,
+          tabWidthMode: 'titleLength',
           themes: [
             {
               name: windowsTerminalSchemeName,
               tab: {
-                background: themeMeta.canvasHex,
+                background: `${themeMeta.accentHex}2E`,
                 unfocusedBackground: '#00000000',
                 showCloseButton: 'always',
               },
@@ -155,9 +102,12 @@ export default function App() {
           profiles: {
             defaults: {
               colorScheme: windowsTerminalSchemeName,
+              icon: `~/.zen-terminal/icons/${theme}-ps.png`,
+              suppressApplicationTitle: false,
               backgroundImage: `~/.zen-terminal/wallpapers/${theme}.png`,
               backgroundImageOpacity: 0.94,
               backgroundImageStretchMode: 'uniformToFill',
+              backgroundImageAlignment: 'topRight',
               ...(shaderEnabled
                 ? {
                     'experimental.pixelShaderPath':
@@ -170,6 +120,23 @@ export default function App() {
               cursorShape: 'bar',
               font: { face: 'Cascadia Code', size: 10.5 },
             },
+            list: [
+              {
+                name: 'zeN // PowerShell',
+                tabTitle: 'zeN // PowerShell',
+                icon: `~/.zen-terminal/icons/${theme}-ps.png`,
+                suppressApplicationTitle: false,
+                commandline:
+                  '%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoLogo',
+              },
+              {
+                name: 'zeN // CMD',
+                tabTitle: 'zeN // CMD',
+                icon: `~/.zen-terminal/icons/${theme}-cmd.png`,
+                suppressApplicationTitle: false,
+                commandline: '%SystemRoot%\\System32\\cmd.exe',
+              },
+            ],
           },
           schemes: [
             {
@@ -196,8 +163,7 @@ export default function App() {
   );
 
   const hlslShaderPreview = useMemo(
-    () => `// ~/.zen-terminal/shaders/capri-crt.hlsl (Toggle via: zen-shader on | off)
-Texture2D shaderTexture;
+    () => `Texture2D shaderTexture;
 SamplerState samplerState;
 
 cbuffer PixelShaderSettings {
@@ -562,6 +528,184 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     setCommandInput('');
   };
 
+  const renderHudBannerCard = () => {
+    const shellLabel =
+      shellTarget === 'cmd'
+        ? 'CMD.EXE'
+        : shellTarget === 'windows-terminal'
+          ? 'WT // PS 7.5'
+          : 'POWERSHELL';
+    const wallState = latticeEnabled ? 'LATTICE ON' : 'LATTICE OFF';
+    const shaderState = shaderEnabled ? 'SHADER ON' : 'SHADER OFF';
+
+    return (
+      <div className="my-2 rounded-xl border border-[var(--zen-border-strong)] bg-[var(--zen-bg-root)]/85 overflow-hidden text-[11px] sm:text-xs zen-font-mono shadow-lg">
+        <div className="px-3 py-1.5 border-b border-[var(--zen-border-default)] flex flex-wrap items-center gap-2">
+          <span
+            className="px-2 py-0.5 font-bold"
+            style={{
+              backgroundColor: themeMeta.accentHex,
+              color: themeMeta.canvasHex,
+            }}
+          >
+            ◆ zeN-TERMINAL // CAPRI SHELL
+          </span>
+          <span
+            className="px-2 py-0.5 font-bold bg-[var(--zen-surface-active)]"
+            style={{
+              color: themeMeta.accentHex,
+            }}
+          >
+            @zen-ui/system · {shellLabel}
+          </span>
+        </div>
+
+        <div className="p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-center border-b border-[var(--zen-border-default)]">
+          <div className="md:col-span-4 md:border-r md:border-[var(--zen-border-default)] pr-2 select-none leading-[1.15] whitespace-pre font-bold">
+            <div style={{ color: themeMeta.accentHex }}>
+              {' ███████╗███████╗███╗   ██╗'}
+            </div>
+            <div style={{ color: themeMeta.accentHex }}>
+              {' ╚══███╝ ██╔════╝████╗  ██║'}
+            </div>
+            <div style={{ color: themeMeta.accentHex }}>
+              {'   ███╝  █████╗  ██╔██╗ ██║'}
+            </div>
+            <div style={{ color: themeMeta.secondaryHex }}>
+              {'  ███╝   ██╔══╝  ██║╚██╗██║'}
+            </div>
+            <div style={{ color: themeMeta.secondaryHex }}>
+              {' ███████╗███████╗██║ ╚████║'}
+            </div>
+            <div style={{ color: themeMeta.secondaryHex }}>
+              {' ╚══════╝╚══════╝╚═╝  ╚═══╝'}
+            </div>
+          </div>
+
+          <div className="md:col-span-8 space-y-1 text-[11px] sm:text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="text-[var(--zen-ink-muted)]">SCHEME   : </span>
+                <span className="font-bold text-[var(--zen-accent-primary)]">
+                  {windowsTerminalSchemeName}
+                </span>
+              </div>
+              <span
+                className="px-1.5 py-0.5 font-bold bg-[var(--zen-surface-active)]"
+                style={{
+                  color: themeMeta.accentHex,
+                }}
+              >
+                {themeMeta.polarity.toUpperCase()} · {themeMeta.accentHex}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[var(--zen-ink-muted)]">TOPOLOGY : </span>
+              <span className="font-bold text-[var(--zen-ink-primary)]">
+                {promptStyle}
+              </span>{' '}
+              <span className="text-[var(--zen-ink-muted)]">
+                ({wallState} · {shaderState})
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[var(--zen-ink-muted)]">FIREWALL : </span>
+              <span
+                className="px-2 py-0.5 font-bold"
+                style={{
+                  backgroundColor: '#06301C',
+                  color: '#00FF66',
+                }}
+              >
+                ● CAPRI GUARD: ARMED
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[var(--zen-ink-muted)]">HOST SYS : </span>
+              <span className="text-[var(--zen-ink-primary)]">WORKSTATION</span>
+              <span className="text-[var(--zen-ink-muted)]"> · User: </span>
+              <span className="text-[var(--zen-ink-primary)]">Lukas</span>
+              <span className="text-[var(--zen-ink-muted)]"> · </span>
+              <span className="text-[var(--zen-accent-secondary)]">
+                {shellLabel}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[var(--zen-ink-muted)]">MEMORY   : </span>
+              <span className="text-[var(--zen-accent-secondary)]">
+                [███░░░░░░░]
+              </span>{' '}
+              <span className="text-[var(--zen-ink-primary)]">
+                25.1 / 95.1 GB (26%)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[var(--zen-ink-muted)]">MATRIX   : </span>
+              <div className="flex items-center gap-1.5">
+                {ZEN_THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    title={`Switch to ${t.name}`}
+                    className={`cursor-pointer transition-transform ${
+                      t.id === theme
+                        ? 'w-3.5 h-3.5 scale-110 ring-1 ring-white/60'
+                        : 'w-3.5 h-2 opacity-85 hover:opacity-100'
+                    }`}
+                    style={{ backgroundColor: t.accentHex }}
+                  />
+                ))}
+              </div>
+              <span className="text-[var(--zen-ink-muted)]">(8 Themes)</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 py-1 border-b border-[var(--zen-border-default)] flex items-center gap-2">
+          <span className="font-bold text-[var(--zen-accent-primary)]">
+            ◆ WORKBENCH COMMANDS
+          </span>
+          <span className="text-[var(--zen-ink-muted)]">
+            · HTTPS://TERMINAL.LPABST.DEV
+          </span>
+        </div>
+
+        <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+          {[
+            { cmd: 'zen-ui', desc: 'Interactive TUI Workbench' },
+            { cmd: 'zen-themes', desc: '8-Theme Matrix' },
+            { cmd: 'zen-theme <id>', desc: 'Switch Theme Live' },
+            { cmd: 'zen-prompt <id>', desc: 'Switch Prompt Style' },
+            { cmd: 'capri-guard', desc: 'Scan SQLi / XSS / Prompt' },
+            { cmd: 'll / zen-status', desc: 'DataTable & HUD' },
+            { cmd: 'zen-wallpaper', desc: 'Toggle Blackwall Lattice' },
+            { cmd: 'zen-shader', desc: 'Toggle CRT Shader' },
+          ].map((item) => (
+            <div key={item.cmd} className="flex items-center gap-2">
+              <span
+                className="px-1.5 py-0.5 font-bold min-w-[7.8rem] inline-block bg-[var(--zen-surface-active)]"
+                style={{
+                  color: themeMeta.accentHex,
+                }}
+              >
+                {item.cmd}
+              </span>
+              <span className="text-[var(--zen-ink-primary)] truncate">
+                {item.desc}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderPromptPreview = (cmdText?: string) => {
     const cwdText =
       shellTarget === 'cmd'
@@ -869,23 +1013,27 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
                 {logs.map((entry) => (
                   <div key={entry.id} className="relative z-10 space-y-1.5">
                     {renderPromptPreview(entry.command)}
-                    <div
-                      className={`pl-2 space-y-0.5 overflow-x-auto ${
-                        entry.tone === 'danger'
-                          ? 'text-[var(--zen-status-danger)]'
-                          : entry.tone === 'success'
-                            ? 'text-[var(--zen-status-success)]'
-                            : entry.tone === 'accent'
-                              ? 'text-[var(--zen-accent-primary)]'
-                              : 'text-[var(--zen-ink-secondary)]'
-                      }`}
-                    >
-                      {entry.outputLines.map((line, idx) => (
-                        <div key={idx} className="whitespace-pre">
-                          {line}
-                        </div>
-                      ))}
-                    </div>
+                    {entry.isHudBanner ? (
+                      renderHudBannerCard()
+                    ) : (
+                      <div
+                        className={`pl-2 space-y-0.5 overflow-x-auto ${
+                          entry.tone === 'danger'
+                            ? 'text-[var(--zen-status-danger)]'
+                            : entry.tone === 'success'
+                              ? 'text-[var(--zen-status-success)]'
+                              : entry.tone === 'accent'
+                                ? 'text-[var(--zen-accent-primary)]'
+                                : 'text-[var(--zen-ink-secondary)]'
+                        }`}
+                      >
+                        {entry.outputLines.map((line, idx) => (
+                          <div key={idx} className="whitespace-pre">
+                            {line}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
 

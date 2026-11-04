@@ -18,7 +18,7 @@ $Global:ZenThemes = [ordered]@{
     SecondaryHex   = "#00FF66"
     CanvasHex      = "#050508"
     TabRowHex      = "#040407"
-    TabActiveHex   = "#1E0916"
+    TabActiveHex   = "#2B0B1E"
     InkHex         = "#F4F7FA"
   }
   "obsidian-gold" = @{
@@ -36,7 +36,7 @@ $Global:ZenThemes = [ordered]@{
     SecondaryHex   = "#FB923C"
     CanvasHex      = "#070709"
     TabRowHex      = "#060608"
-    TabActiveHex   = "#221A0B"
+    TabActiveHex   = "#2D210B"
     InkHex         = "#F6F2E9"
   }
   "neon-emerald" = @{
@@ -54,7 +54,7 @@ $Global:ZenThemes = [ordered]@{
     SecondaryHex   = "#2DD4BF"
     CanvasHex      = "#040807"
     TabRowHex      = "#030706"
-    TabActiveHex   = "#0A241B"
+    TabActiveHex   = "#0B2B20"
     InkHex         = "#ECFDF5"
   }
   "midnight-cobalt" = @{
@@ -72,7 +72,7 @@ $Global:ZenThemes = [ordered]@{
     SecondaryHex   = "#818CF8"
     CanvasHex      = "#060911"
     TabRowHex      = "#05070E"
-    TabActiveHex   = "#0D213B"
+    TabActiveHex   = "#0F2747"
     InkHex         = "#F1F5F9"
   }
   "atelier-paper" = @{
@@ -223,6 +223,88 @@ float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET {
   return $shaderPath
 }
 
+function New-ZenPillPath {
+  param([int]$X, [int]$Y, [int]$Width, [int]$Height)
+  $gp = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $d = [math]::Max(4, $Height)
+  $gp.AddArc($X, $Y, $d, $d, 90, 180)
+  $gp.AddArc(($X + $Width - $d), $Y, $d, $d, 270, 180)
+  $gp.CloseFigure()
+  return $gp
+}
+
+function Export-ZenTabIcons {
+  param([switch]$Force)
+  $iconDir = Join-Path $ZenHomeDir "icons"
+  if (-not (Test-Path $iconDir)) {
+    New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
+  }
+  try {
+    Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+  } catch {
+    return
+  }
+
+  foreach ($key in $Global:ZenThemes.Keys) {
+    $t = $Global:ZenThemes[$key]
+    $aParts = $t.AccentRgb -split ";"
+    $sParts = $t.SecondaryRgb -split ";"
+
+    foreach ($shellType in @("ps", "cmd")) {
+      $iconPath = Join-Path $iconDir "$($t.Id)-$shellType.png"
+      if ((-not $Force) -and (Test-Path $iconPath)) { continue }
+
+      $sz = 64
+      $bmp = New-Object System.Drawing.Bitmap($sz, $sz)
+      $g = [System.Drawing.Graphics]::FromImage($bmp)
+      $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+      $g.Clear([System.Drawing.Color]::Transparent)
+
+      $r = if ($shellType -eq "ps") { [int]$aParts[0] } else { [int]$sParts[0] }
+      $gr = if ($shellType -eq "ps") { [int]$aParts[1] } else { [int]$sParts[1] }
+      $b = if ($shellType -eq "ps") { [int]$aParts[2] } else { [int]$sParts[2] }
+
+      $outerPts = @(
+        (New-Object System.Drawing.Point(32, 4)),
+        (New-Object System.Drawing.Point(60, 32)),
+        (New-Object System.Drawing.Point(32, 60)),
+        (New-Object System.Drawing.Point(4, 32))
+      )
+      $midPts = @(
+        (New-Object System.Drawing.Point(32, 10)),
+        (New-Object System.Drawing.Point(54, 32)),
+        (New-Object System.Drawing.Point(32, 54)),
+        (New-Object System.Drawing.Point(10, 32))
+      )
+      $corePts = @(
+        (New-Object System.Drawing.Point(32, 15)),
+        (New-Object System.Drawing.Point(49, 32)),
+        (New-Object System.Drawing.Point(32, 49)),
+        (New-Object System.Drawing.Point(15, 32))
+      )
+
+      $outerBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(48, $r, $gr, $b))
+      $midBrush   = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(115, $r, $gr, $b))
+      $coreBrush  = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, $r, $gr, $b))
+      $edgePen    = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(220, 255, 255, 255), 1.5)
+
+      $g.FillPolygon($outerBrush, $outerPts)
+      $g.FillPolygon($midBrush, $midPts)
+      $g.FillPolygon($coreBrush, $corePts)
+      $g.DrawPolygon($edgePen, $corePts)
+
+      $edgePen.Dispose()
+      $coreBrush.Dispose()
+      $midBrush.Dispose()
+      $outerBrush.Dispose()
+      $g.Dispose()
+
+      $bmp.Save($iconPath, [System.Drawing.Imaging.ImageFormat]::Png)
+      $bmp.Dispose()
+    }
+  }
+}
+
 function Export-ZenWallpapers {
   param([switch]$Force)
   $wallDir = Join-Path $ZenHomeDir "wallpapers"
@@ -235,6 +317,9 @@ function Export-ZenWallpapers {
     return
   }
 
+  $diamond = [char]0x25C6
+  $dot     = [char]0x25CF
+
   foreach ($key in $Global:ZenThemes.Keys) {
     $t = $Global:ZenThemes[$key]
     $outPath = Join-Path $wallDir "$($t.Id).png"
@@ -244,21 +329,23 @@ function Export-ZenWallpapers {
     $aParts = $t.AccentRgb -split ";"
     $sParts = $t.SecondaryRgb -split ";"
     $mParts = $t.MutedRgb -split ";"
+    $sfParts = $t.SurfaceRgb -split ";"
 
     $w = 1920
     $h = 1080
     $bmp = New-Object System.Drawing.Bitmap($w, $h)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
 
     $bgColor = [System.Drawing.Color]::FromArgb(255, [int]$cParts[0], [int]$cParts[1], [int]$cParts[2])
     $g.Clear($bgColor)
 
     $isDark = ($t.Polarity -eq "DARK")
-    $glowAlpha1 = if ($isDark) { 34 } else { 22 }
-    $glowAlpha2 = if ($isDark) { 22 } else { 16 }
-    $minorAlpha = if ($isDark) { 11 } else { 14 }
-    $majorAlpha = if ($isDark) { 26 } else { 28 }
+    $glowAlpha1 = if ($isDark) { 42 } else { 24 }
+    $glowAlpha2 = if ($isDark) { 26 } else { 18 }
+    $minorAlpha = if ($isDark) { 13 } else { 15 }
+    $majorAlpha = if ($isDark) { 30 } else { 30 }
 
     $path1 = New-Object System.Drawing.Drawing2D.GraphicsPath
     $path1.AddEllipse(980, -320, 1280, 960)
@@ -280,7 +367,7 @@ function Export-ZenWallpapers {
 
     $minorPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb($minorAlpha, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1)
     $majorPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb($majorAlpha, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1)
-    $crossPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(52, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]), 1)
+    $crossPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(60, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]), 1)
 
     for ($x = 0; $x -le $w; $x += 48) {
       if ($x % 240 -eq 0) {
@@ -304,16 +391,75 @@ function Export-ZenWallpapers {
       }
     }
 
-    $hudPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(95, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 2)
+    $topGlowRect = New-Object System.Drawing.Rectangle(0, 0, $w, 34)
+    $topGlowBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+      $topGlowRect,
+      [System.Drawing.Color]::FromArgb(78, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]),
+      [System.Drawing.Color]::FromArgb(0, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]),
+      [System.Drawing.Drawing2D.LinearGradientMode]::Vertical
+    )
+    $g.FillRectangle($topGlowBrush, $topGlowRect)
+    $topGlowBrush.Dispose()
+
+    $framePen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(75, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 2)
+    $g.DrawRectangle($framePen, 1, 1, ($w - 3), ($h - 3))
+    $framePen.Dispose()
+
+    $hudPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(200, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 3)
     $g.DrawLine($hudPen, 0, 1, $w, 1)
-    $g.DrawLine($hudPen, $w - 320, $h - 28, $w - 24, $h - 28)
-    $g.DrawLine($hudPen, $w - 24, $h - 28, $w - 24, $h - 68)
 
     try {
+      $pillFont = New-Object System.Drawing.Font("Consolas", 10.5, [System.Drawing.FontStyle]::Bold)
+      $sf = New-Object System.Drawing.StringFormat
+      $sf.Alignment = [System.Drawing.StringAlignment]::Center
+      $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
+
+      $p1Text = "$diamond $($t.Name)"
+      $p2Text = "$dot GUARD: ARMED"
+
+      $p1Measured = $g.MeasureString($p1Text, $pillFont)
+      $p2Measured = $g.MeasureString($p2Text, $pillFont)
+
+      $pillH = 30
+      $pillY = 14
+      $p2W = [int][math]::Ceiling($p2Measured.Width) + 28
+      $p1W = [int][math]::Ceiling($p1Measured.Width) + 28
+      $p2X = $w - $p2W - 24
+      $p1X = $p2X - $p1W - 10
+
+      $pill1Path = New-ZenPillPath -X $p1X -Y $pillY -Width $p1W -Height $pillH
+      $pill1Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(225, [int]$sfParts[0], [int]$sfParts[1], [int]$sfParts[2]))
+      $pill1Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(210, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]), 1.6)
+      $pill1TextBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]))
+      $g.FillPath($pill1Bg, $pill1Path)
+      $g.DrawPath($pill1Border, $pill1Path)
+      $rect1 = New-Object System.Drawing.RectangleF($p1X, ($pillY + 1), $p1W, $pillH)
+      $g.DrawString($p1Text, $pillFont, $pill1TextBrush, $rect1, $sf)
+
+      $pill2Path = New-ZenPillPath -X $p2X -Y $pillY -Width $p2W -Height $pillH
+      $pill2Bg = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(225, 6, 42, 26))
+      $pill2Border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(210, 16, 185, 129), 1.6)
+      $pill2TextBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 52, 211, 153))
+      $g.FillPath($pill2Bg, $pill2Path)
+      $g.DrawPath($pill2Border, $pill2Path)
+      $rect2 = New-Object System.Drawing.RectangleF($p2X, ($pillY + 1), $p2W, $pillH)
+      $g.DrawString($p2Text, $pillFont, $pill2TextBrush, $rect2, $sf)
+
+      $pill1Path.Dispose()
+      $pill2Path.Dispose()
+      $pill1Bg.Dispose()
+      $pill1Border.Dispose()
+      $pill1TextBrush.Dispose()
+      $pill2Bg.Dispose()
+      $pill2Border.Dispose()
+      $pill2TextBrush.Dispose()
+      $sf.Dispose()
+      $pillFont.Dispose()
+
       $font = New-Object System.Drawing.Font("Consolas", 9, [System.Drawing.FontStyle]::Bold)
-      $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(85, [int]$mParts[0], [int]$mParts[1], [int]$mParts[2]))
+      $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(95, [int]$mParts[0], [int]$mParts[1], [int]$mParts[2]))
       $label = "zeN-TERMINAL // $($t.Name.ToUpper()) // @zen-ui/system"
-      $g.DrawString($label, $font, $brush, ($w - 420), ($h - 48))
+      $g.DrawString($label, $font, $brush, ($w - 420), ($h - 42))
       $brush.Dispose()
       $font.Dispose()
     } catch {}
@@ -333,10 +479,13 @@ function Sync-ZenTerminalOscColors {
   param([string]$ThemeId)
   $t = $Global:ZenThemes[$ThemeId]
   if (-not $t) { return }
+  try {
+    $Host.UI.RawUI.WindowTitle = "zeN // PowerShell"
+  } catch {}
   if ([Environment]::UserInteractive -and -not [Console]::IsOutputRedirected) {
     $esc = [char]27
     $bel = [char]7
-    [Console]::Write("$esc]4;0;$($t.CanvasHex)$bel$esc]4;5;$($t.CanvasHex)$bel$esc]4;6;$($t.InkHex)$bel$esc]4;7;$($t.InkHex)$bel$esc]10;$($t.InkHex)$bel$esc]11;$($t.CanvasHex)$bel$esc]12;$($t.AccentHex)$bel")
+    [Console]::Write("$esc]0;zeN // PowerShell$bel$esc]4;0;$($t.CanvasHex)$bel$esc]4;5;$($t.CanvasHex)$bel$esc]4;6;$($t.InkHex)$bel$esc]4;7;$($t.InkHex)$bel$esc]10;$($t.InkHex)$bel$esc]11;$($t.CanvasHex)$bel$esc]12;$($t.AccentHex)$bel")
   }
 }
 
@@ -345,9 +494,12 @@ function Sync-ZenWindowsTerminalSettings {
   $t = $Global:ZenThemes[$ThemeId]
   if (-not $t) { $t = $Global:ZenThemes["blackwall-crimson"] }
 
+  Export-ZenTabIcons
   Export-ZenWallpapers
-  $shaderPath = Export-ZenShader
+  $shaderPath    = Export-ZenShader
   $wallpaperPath = Join-Path $ZenHomeDir "wallpapers\$($t.Id).png"
+  $psIconPath    = Join-Path $ZenHomeDir "icons\$($t.Id)-ps.png"
+  $cmdIconPath   = Join-Path $ZenHomeDir "icons\$($t.Id)-cmd.png"
 
   $schemesPath = Join-Path $ZenHomeDir "windows-terminal-schemes.json"
   $schemes = $null
@@ -397,12 +549,20 @@ function Sync-ZenWindowsTerminalSettings {
 
         $json | Add-Member -NotePropertyName "themes" -NotePropertyValue $wtThemes -Force
         $json | Add-Member -NotePropertyName "theme" -NotePropertyValue $t.Name -Force
+        $json | Add-Member -NotePropertyName "tabWidthMode" -NotePropertyValue "titleLength" -Force
 
         if (-not $json.profiles.defaults) {
           $json.profiles | Add-Member -NotePropertyName "defaults" -NotePropertyValue ([pscustomobject]@{}) -Force
         }
         $defs = $json.profiles.defaults
         $defs | Add-Member -NotePropertyName "colorScheme" -NotePropertyValue $t.Name -Force
+        if ($defs.PSObject.Properties["tabColor"]) {
+          $defs.PSObject.Properties.Remove("tabColor")
+        }
+        if (Test-Path $psIconPath) {
+          $defs | Add-Member -NotePropertyName "icon" -NotePropertyValue $psIconPath -Force
+        }
+        $defs | Add-Member -NotePropertyName "suppressApplicationTitle" -NotePropertyValue $false -Force
         $defs | Add-Member -NotePropertyName "opacity" -NotePropertyValue 94 -Force
         $defs | Add-Member -NotePropertyName "useAcrylic" -NotePropertyValue $true -Force
         $defs | Add-Member -NotePropertyName "padding" -NotePropertyValue "20, 18, 20, 18" -Force
@@ -417,6 +577,7 @@ function Sync-ZenWindowsTerminalSettings {
           $defs | Add-Member -NotePropertyName "backgroundImage" -NotePropertyValue $wallpaperPath -Force
           $defs | Add-Member -NotePropertyName "backgroundImageOpacity" -NotePropertyValue 0.94 -Force
           $defs | Add-Member -NotePropertyName "backgroundImageStretchMode" -NotePropertyValue "uniformToFill" -Force
+          $defs | Add-Member -NotePropertyName "backgroundImageAlignment" -NotePropertyValue "topRight" -Force
         } else {
           if ($defs.PSObject.Properties["backgroundImage"]) {
             $defs.PSObject.Properties.Remove("backgroundImage")
@@ -436,16 +597,27 @@ function Sync-ZenWindowsTerminalSettings {
             if ($prof.PSObject.Properties["colorScheme"]) {
               $prof.colorScheme = $t.Name
             }
+            if ($prof.PSObject.Properties["tabColor"]) {
+              $prof.PSObject.Properties.Remove("tabColor")
+            }
             if ($prof.commandline -match "powershell\.exe" -and $prof.commandline -notmatch "-NoLogo") {
               $prof.commandline = "$($prof.commandline) -NoLogo"
             }
-            if ($prof.commandline -match "powershell\.exe" -or $prof.name -eq "Windows PowerShell") {
+            if (($prof.commandline -match "powershell\.exe" -or $prof.name -match "Windows PowerShell|zeN // PowerShell") -and ($prof.name -notmatch "Developer")) {
+              $prof | Add-Member -NotePropertyName "name" -NotePropertyValue "zeN // PowerShell" -Force
               $prof | Add-Member -NotePropertyName "tabTitle" -NotePropertyValue "zeN // PowerShell" -Force
-              $prof | Add-Member -NotePropertyName "suppressApplicationTitle" -NotePropertyValue $true -Force
+              $prof | Add-Member -NotePropertyName "suppressApplicationTitle" -NotePropertyValue $false -Force
+              if (Test-Path $psIconPath) {
+                $prof | Add-Member -NotePropertyName "icon" -NotePropertyValue $psIconPath -Force
+              }
             }
-            if ($prof.commandline -match "cmd\.exe") {
+            if (($prof.commandline -match "cmd\.exe" -or $prof.name -match "Eingabeaufforderung|Command Prompt|zeN // CMD") -and ($prof.name -notmatch "Developer")) {
+              $prof | Add-Member -NotePropertyName "name" -NotePropertyValue "zeN // CMD" -Force
               $prof | Add-Member -NotePropertyName "tabTitle" -NotePropertyValue "zeN // CMD" -Force
-              $prof | Add-Member -NotePropertyName "suppressApplicationTitle" -NotePropertyValue $true -Force
+              $prof | Add-Member -NotePropertyName "suppressApplicationTitle" -NotePropertyValue $false -Force
+              if (Test-Path $cmdIconPath) {
+                $prof | Add-Member -NotePropertyName "icon" -NotePropertyValue $cmdIconPath -Force
+              }
             }
           }
         }
@@ -690,7 +862,7 @@ function Write-ZenCmdAutorunScript {
   $dot      = [char]0x25CF
   $idUpper  = $t.Id.ToUpper()
 
-  $oscSeq = "$esc]4;0;$($t.CanvasHex)$bel$esc]4;5;$($t.CanvasHex)$bel$esc]4;6;$($t.InkHex)$bel$esc]4;7;$($t.InkHex)$bel$esc]10;$($t.InkHex)$bel$esc]11;$($t.CanvasHex)$bel$esc]12;$($t.AccentHex)$bel"
+  $oscSeq = "$esc]0;zeN // CMD$bel$esc]4;0;$($t.CanvasHex)$bel$esc]4;5;$($t.CanvasHex)$bel$esc]4;6;$($t.InkHex)$bel$esc]4;7;$($t.InkHex)$bel$esc]10;$($t.InkHex)$bel$esc]11;$($t.CanvasHex)$bel$esc]12;$($t.AccentHex)$bel"
 
   if ($Global:ActiveZenPromptStyle -eq "minimal-1line") {
     $cmdPrompt = "PROMPT `$E[1;38;2;$($t.AccentRgb)m[$idUpper]`$E[0m `$E[38;2;$($t.InkRgb)m`$P`$E[0m `$E[38;2;$($t.SecondaryRgb)m$check`$E[0m `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
@@ -704,6 +876,7 @@ function Write-ZenCmdAutorunScript {
 
   $Utf8Lines = @(
     "@echo off",
+    "title zeN // CMD",
     "cls",
     "echo $oscSeq",
     $printCmd,

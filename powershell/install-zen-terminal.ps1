@@ -126,6 +126,7 @@ if (Get-AppxPackage -Name "Microsoft.WindowsTerminal" -ErrorAction SilentlyConti
 
 $Global:ZenBannerShown = $true
 . (Join-Path $ZenHome "zen-profile.ps1")
+Export-ZenTabIcons -Force
 Export-ZenWallpapers -Force
 Sync-ZenWindowsTerminalSettings -ThemeId $Theme
 Write-ZenCmdAutorunScript -ThemeId $Theme
