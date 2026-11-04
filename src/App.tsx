@@ -206,7 +206,7 @@ zen-prompt ${promptStyle}
 zen-wallpaper ${latticeEnabled ? 'on' : 'off'}
 zen-shader ${shaderEnabled ? 'on' : 'off'}
 
-# Render @zen-ui/system DataTable directory listing or scan payloads:
+# Render @zen-ui-capri/system DataTable directory listing or scan payloads:
 ll
 capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     [theme, promptStyle, latticeEnabled, shaderEnabled]
@@ -242,7 +242,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
           command: trimmed,
           outputLines: [
             '╭──────────────────────────────────────────────────────────────────────────────────╮',
-            '│ zeN-TERMINAL // COMMAND REFERENCE (@zen-ui/system · POWERSHELL & CMD)            │',
+            '│ zeN-TERMINAL // COMMAND REFERENCE (@zen-ui-capri/system · POWERSHELL & CMD)            │',
             '├──────────────────────────────────────────────────────────────────────────────────┤',
             '│  zen-ui / zen                Launch interactive full-screen TUI workbench        │',
             '│  zen-themes                  Display all 8 Dark & Light polarity schemes         │',
@@ -250,7 +250,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
             '│  zen-prompt <style>          Switch prompt (telemetry-2line | netrunner-hud...)  │',
             '│  zen-wallpaper <on|off>      Toggle 1920x1080 Blackwall Lattice background PNG   │',
             '│  zen-shader <on|off>         Toggle GPU HLSL CRT scanline pixel shader           │',
-            '│  ll / zen-ls                 Render @zen-ui/system DataTable directory view      │',
+            '│  ll / zen-ls                 Render @zen-ui-capri/system DataTable directory view      │',
             '│  capri-guard "<payload>"     Scan input for SQLi, XSS & Prompt Injection         │',
             '│  zen-banner / zen-status     Render the 2-column Capri Telemetry HUD card        │',
             '╰──────────────────────────────────────────────────────────────────────────────────╯',
@@ -271,7 +271,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
           command: trimmed,
           outputLines: [
             '╭──────────────────────────────────────────────────────────────────────────────────╮',
-            `│ ◆ zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui/system)  [${themeMeta.polarity.toUpperCase()} · ${themeMeta.accentHex}] │`,
+            `│ ◆ zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui-capri/system)  [${themeMeta.polarity.toUpperCase()} · ${themeMeta.accentHex}] │`,
             '├──────────────────────────────────────────────────────────────────────────────────┤',
             '│  [Up/Down/1-8] Live-Switch Theme · [P] Cycle Prompt Topology · [D] Polarity      │',
             '│  [W] Toggle 1080p Blackwall Lattice BG · [S] Toggle CRT Shader · [G] Capri Guard │',
@@ -401,7 +401,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
           command: trimmed,
           outputLines: [
             '╭──────────────────────────────────────────────────────────────────────────────────╮',
-            '│ @zen-ui/system // 8-THEME POLARITY MATRIX (POWERSHELL, WINDOWS TERMINAL & CMD)   │',
+            '│ @zen-ui-capri/system // 8-THEME POLARITY MATRIX (POWERSHELL, WINDOWS TERMINAL & CMD)   │',
             '├──────────────────────────────────────────────────────────────────────────────────┤',
             ...ZEN_THEMES.map(
               (t, idx) =>
@@ -556,7 +556,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
               color: themeMeta.accentHex,
             }}
           >
-            @zen-ui/system · {shellLabel}
+            @zen-ui-capri/system · {shellLabel}
           </span>
         </div>
 
@@ -773,7 +773,7 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
 
       <ZenNavbar
         brandTitle="zeN-Terminal"
-        brandSubtitle="WINDOWS TERMINAL · POWERSHELL · CMD ENGINE (@zen-ui/system)"
+        brandSubtitle="WINDOWS TERMINAL · POWERSHELL · CMD ENGINE (@zen-ui-capri/system)"
         actionsSlot={
           <>
             <div className="w-44 sm:w-52">

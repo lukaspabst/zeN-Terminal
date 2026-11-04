@@ -799,7 +799,7 @@ function Format-ZenHudBannerLines {
   $wallState   = if ($Global:ZenWallpaperEnabled) { "LATTICE ON" } else { "LATTICE OFF" }
   $shaderState = if ($Global:ZenShaderEnabled) { "SHADER ON" } else { "SHADER OFF" }
 
-  $hdrText = " $pillAccent $diamond zeN-TERMINAL // CAPRI SHELL $rst  $pillSurf @zen-ui/system $mid $ShellName $rst"
+  $hdrText = " $pillAccent $diamond zeN-TERMINAL // CAPRI SHELL $rst  $pillSurf @zen-ui-capri/system $mid $ShellName $rst"
   $divText = " $acB$diamond WORKBENCH COMMANDS$rst $mu$mid HTTPS://TERMINAL.LPABST.DEV$rst"
 
   $lines = @(
@@ -1129,7 +1129,7 @@ function Show-ZenThemes {
 
   Write-Host ""
   Write-Host "  $mu$tl$line$tr$rst"
-  Write-Host "  $mu$vt$rst  $acB@zen-ui/system // 8-THEME POLARITY MATRIX (POWERSHELL, WINDOWS TERMINAL & CMD)$rst  $mu$vt$rst"
+  Write-Host "  $mu$vt$rst  $acB@zen-ui-capri/system // 8-THEME POLARITY MATRIX (POWERSHELL, WINDOWS TERMINAL & CMD)$rst  $mu$vt$rst"
   Write-Host "  $mu$ml$line$mr$rst"
   $idx = 1
   foreach ($key in $Global:ZenThemes.Keys) {
@@ -1275,16 +1275,16 @@ function Show-ZenHelp {
 
   Write-Host ""
   Write-Host "  $mu$tl$line$tr$rst"
-  Write-Host "  $mu$vt$rst  $acB`zeN-TERMINAL // COMMAND REFERENCE (@zen-ui/system)$rst                              $mu$vt$rst"
+  Write-Host "  $mu$vt$rst  $acB`zeN-TERMINAL // COMMAND REFERENCE (@zen-ui-capri/system)$rst                        $mu$vt$rst"
   Write-Host "  $mu$ml$line$mr$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-ui / zen                $rst $in`Launch interactive full-screen TUI workbench$rst       $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-themes                  $rst $in`Display all 8 Dark & Light polarity schemes$rst        $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-theme <id>              $rst $in`Switch theme across PS, CMD & Windows Terminal$rst     $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-prompt <1|2|3|style>    $rst $in`Switch prompt (telemetry-2line, netrunner-hud...)$rst  $mu$vt$rst"
-  Write-Host "  $mu$vt$rst  $sc`zen-wallpaper <on|off>      $rst $in`Toggle @zen-ui/system Blackwall Lattice wallpaper$rst  $mu$vt$rst"
+  Write-Host "  $mu$vt$rst  $sc`zen-wallpaper <on|off>      $rst $in`Toggle @zen-ui-capri/system Blackwall wallpaper$rst    $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-shader <on|off>         $rst $in`Toggle GPU HLSL CRT scanline pixel shader$rst          $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`capri-guard <payload|on|off>$rst $in`Scan input for SQLi/XSS/Prompt Injection$rst           $mu$vt$rst"
-  Write-Host "  $mu$vt$rst  $sc`ll / zen-ls                 $rst $in`Render @zen-ui/system DataTable directory view$rst     $mu$vt$rst"
+  Write-Host "  $mu$vt$rst  $sc`ll / zen-ls                 $rst $in`Render @zen-ui-capri/system DataTable view$rst         $mu$vt$rst"
   Write-Host "  $mu$vt$rst  $sc`zen-banner / zen-status     $rst $in`Render the 2-column Capri Telemetry HUD card$rst       $mu$vt$rst"
   Write-Host "  $mu$bl$line$br$rst"
   Write-Host ""
@@ -1342,7 +1342,7 @@ function Start-ZenWorkbench {
 
       Write-Host ""
       Write-Host "  $mu$tl$line$tr$rst"
-      Write-Host (Format-ZenBoxRow -Content "  $pillAccent $bolt zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui/system) $rst  $pillSurf $($cur.Polarity) $mid $($cur.AccentHex) $rst" -InnerWidth $W -BorderColor $mu)
+      Write-Host (Format-ZenBoxRow -Content "  $pillAccent $bolt zeN-TERMINAL // INTERACTIVE WORKBENCH TUI (@zen-ui-capri/system) $rst  $pillSurf $($cur.Polarity) $mid $($cur.AccentHex) $rst" -InnerWidth $W -BorderColor $mu)
       Write-Host "  $mu$ml$line$mr$rst"
       Write-Host (Format-ZenBoxRow -Content "  ${acB}01 // 8-THEME POLARITY MATRIX$rst $mu(Use [Up/Down] or [1-8] to live-switch, [D] Polarity)$rst" -InnerWidth $W -BorderColor $mu)
       Write-Host (Format-ZenBoxRow -Content "" -InnerWidth $W -BorderColor $mu)
