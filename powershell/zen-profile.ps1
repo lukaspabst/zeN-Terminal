@@ -881,11 +881,11 @@ function Write-ZenCmdAutorunScript {
   $oscSeq = "$esc]0;zeN // CMD$bel$esc]4;0;$($t.CanvasHex)$bel$esc]4;5;$($t.CanvasHex)$bel$esc]4;6;$($t.InkHex)$bel$esc]4;7;$($t.InkHex)$bel$esc]10;$($t.InkHex)$bel$esc]11;$($t.CanvasHex)$bel$esc]12;$($t.AccentHex)$bel"
 
   if ($Global:ActiveZenPromptStyle -eq "minimal-1line") {
-    $cmdPrompt = "PROMPT `$E[1;38;2;$($t.AccentRgb)m[$idUpper]`$E[0m `$E[38;2;$($t.InkRgb)m`$P`$E[0m `$E[38;2;$($t.SecondaryRgb)m$check`$E[0m `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
+    $cmdPrompt = "PROMPT `$E[1;38;2;$($t.AccentRgb)m$bolt`$E[0m `$E[1;38;2;$($t.InkRgb)m`$P`$E[0m `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
   } elseif ($Global:ActiveZenPromptStyle -eq "netrunner-hud") {
-    $cmdPrompt = "PROMPT `$E[38;2;$($t.MutedRgb)m$boxDR$boxH$boxH$lb`$E[1;38;2;$($t.AccentRgb)m$bolt CAPRI // $idUpper`$E[0m`$E[38;2;$($t.MutedRgb)m$rb$boxH$boxH$lb`$E[38;2;$($t.SecondaryRgb)m$dot GUARD: ARMED`$E[38;2;$($t.MutedRgb)m$rb$boxH$boxH$lb`$E[38;2;$($t.InkRgb)m`$P`$E[38;2;$($t.MutedRgb)m$rb`$_$boxUR$boxH$boxH`$E[38;2;$($t.SecondaryRgb)m$check `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
+    $cmdPrompt = "PROMPT `$E[1;48;2;$($t.SurfaceRgb)m`$E[1;38;2;$($t.AccentRgb)m $bolt zen `$E[0m  `$E[1;38;2;$($t.InkRgb)m`$P`$E[0m`$_ `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
   } else {
-    $cmdPrompt = "PROMPT `$E[38;2;$($t.MutedRgb)m$topC$dash[`$E[1;48;2;$($t.SurfaceRgb)m`$E[1;38;2;$($t.AccentRgb)m $bolt CAPRI // $idUpper `$E[0m`$E[38;2;$($t.MutedRgb)m]$dash[`$E[38;2;$($t.InkRgb)m`$P`$E[38;2;$($t.MutedRgb)m]$dash[`$E[38;2;$($t.SecondaryRgb)m$dot GUARD: ARMED`$E[38;2;$($t.MutedRgb)m]`$_$botC$dash`$E[38;2;$($t.SecondaryRgb)m$check `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
+    $cmdPrompt = "PROMPT `$E[1;48;2;$($t.SurfaceRgb)m`$E[1;38;2;$($t.AccentRgb)m $bolt zen `$E[0m  `$E[1;38;2;$($t.InkRgb)m`$P`$E[0m  `$E[1;38;2;$($t.AccentRgb)m$arrow`$E[0m "
   }
 
   $printCmd = if (Test-Path $ZenPrintExe) { "`"$ZenPrintExe`" `"$CmdBannerPath`"" } else { "type `"$CmdBannerPath`"" }
@@ -1466,76 +1466,41 @@ Apply-ZenPSReadLineColors -ThemeId $Global:ActiveZenThemeId
 Sync-ZenTerminalOscColors -ThemeId $Global:ActiveZenThemeId
 
 function global:prompt {
-  $lastOk = $?
-  $esc      = [char]27
-  $topCorner = [char]0x256D
-  $botCorner = [char]0x2570
-  $dash     = [char]0x2500
-  $boxDR    = [char]0x2554
-  $boxUR    = [char]0x255A
-  $boxH     = [char]0x2550
-  $lb       = [char]0x27E6
-  $rb       = [char]0x27E7
-  $bolt     = [char]0x25C6
-  $dot      = [char]0x25CF
-  $gitIcon  = [char]0x2387
-  $arrow    = [char]0x276F
-  $check    = [char]0x2714
-  $cross    = [char]0x2716
+  $lastOk  = $?
+  $esc     = [char]27
+  $bolt    = [char]0x25C6
+  $gitIcon = [char]0x2387
+  $arrow   = [char]0x276F
 
   $t = $Global:ZenThemes[$Global:ActiveZenThemeId]
   if (-not $t) { $t = $Global:ZenThemes["blackwall-crimson"] }
 
-  $ac  = "$esc[38;2;$($t.AccentRgb)m"
   $acB = "$esc[1;38;2;$($t.AccentRgb)m"
   $sc  = "$esc[38;2;$($t.SecondaryRgb)m"
-  $mu  = "$esc[38;2;$($t.MutedRgb)m"
-  $in  = "$esc[38;2;$($t.InkRgb)m"
+  $inB = "$esc[1;38;2;$($t.InkRgb)m"
   $rst = "$esc[0m"
   $pillBrand = "$esc[1;48;2;$($t.SurfaceRgb)m$esc[1;38;2;$($t.AccentRgb)m"
 
   $cwd = (Get-Location).Path.Replace($HOME, "~")
-  $gitSegment2Line = ""
-  $gitSegmentHud   = ""
-  $gitSegmentMin   = ""
+  $gitSeg = ""
   if (Get-Command git -ErrorAction SilentlyContinue) {
     $branch = git rev-parse --abbrev-ref HEAD 2>$null
     if ($LASTEXITCODE -eq 0 -and $branch) {
-      $gitSegment2Line = "$dash[$sc$gitIcon $branch $check$mu]"
-      $gitSegmentHud   = "$boxH$boxH$lb$sc$gitIcon $branch $check$mu$rb"
-      $gitSegmentMin   = " $sc$gitIcon $branch$rst"
+      $gitSeg = "  $sc$gitIcon $branch$rst"
     }
   }
 
-  $durStr = ""
-  $mid = [char]0x00B7
-  $lastHist = Get-History -Count 1 -ErrorAction SilentlyContinue
-  if ($lastHist) {
-    $ms = [int][math]::Round(($lastHist.EndExecutionTime - $lastHist.StartExecutionTime).TotalMilliseconds)
-    if ($ms -ge 1000) {
-      $durStr = "{0:N1}s $mid " -f ($ms / 1000.0)
-    } elseif ($ms -gt 0) {
-      $durStr = "${ms}ms $mid "
-    }
-  }
-
-  $timeStr = (Get-Date).ToString("HH:mm:ss")
-  $statusGlyph = if ($lastOk) { "$sc$check" } else { "$esc[38;2;255;51;102m$cross" }
-  $guardTag = if ($Global:CapriGuardAuto) { "$sc$dot GUARD" } else { "$esc[38;2;255;51;102m$dot OFF" }
+  $arrowCol = if ($lastOk) { $acB } else { "$esc[1;38;2;255;51;102m" }
 
   if ($Global:ActiveZenPromptStyle -eq "minimal-1line") {
-    return "`n$acB[$($t.Id.ToUpper())]$rst $in$cwd$rst$gitSegmentMin $statusGlyph $acB$arrow$rst "
+    return "`n$acB$bolt$rst $inB$cwd$rst$gitSeg  $arrowCol$arrow$rst "
   }
 
   if ($Global:ActiveZenPromptStyle -eq "netrunner-hud") {
-    $h1 = "$mu$boxDR$boxH$boxH$lb$pillBrand $bolt CAPRI // $($t.Id.ToUpper()) $rst$mu$rb$boxH$boxH$lb$($guardTag)$mu$rb$boxH$boxH$lb$in$cwd$mu$rb$gitSegmentHud$boxH$boxH$lb$durStr$timeStr$rb$rst"
-    $h2 = "$mu$boxUR$boxH$boxH$statusGlyph $acB$arrow$rst "
-    return "`n$h1`n$h2"
+    return "`n$pillBrand $bolt zen $rst  $inB$cwd$rst$gitSeg`n $arrowCol$arrow$rst "
   }
 
-  $line1 = "$mu$topCorner$dash[$pillBrand $bolt CAPRI // $($t.Id.ToUpper()) $rst$mu]$dash[$in$cwd$mu]$gitSegment2Line$dash[$guardTag$mu]$dash[$durStr$timeStr]$rst"
-  $line2 = "$mu$botCorner$dash$statusGlyph $acB$arrow$rst "
-  return "`n$line1`n$line2"
+  return "`n$pillBrand $bolt zen $rst  $inB$cwd$rst$gitSeg  $arrowCol$arrow$rst "
 }
 
 $cmdArgs = [Environment]::GetCommandLineArgs()

@@ -714,12 +714,12 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
 
     if (promptStyle === 'minimal-1line') {
       return (
-        <div className="zen-font-mono text-xs sm:text-sm flex items-center gap-2 flex-wrap">
-          <span className="text-[var(--zen-accent-primary)] font-bold">
-            [{theme.toUpperCase()}]
+        <div className="zen-font-mono text-xs sm:text-sm flex items-center gap-2.5 flex-wrap">
+          <span className="text-[var(--zen-accent-primary)] font-bold">◆</span>
+          <span className="text-[var(--zen-ink-primary)] font-semibold">
+            {cwdText}
           </span>
-          <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
-          <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
+          <span className="text-[var(--zen-accent-secondary)]">⎇ main</span>
           <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
           {cmdText && (
             <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
@@ -730,25 +730,17 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
 
     if (promptStyle === 'netrunner-hud') {
       return (
-        <div className="zen-font-mono text-xs sm:text-sm space-y-0.5">
-          <div className="text-[var(--zen-ink-muted)]">
-            ╔══⟦
-            <span className="px-1.5 py-0.5 bg-[var(--zen-accent-subtle)] text-[var(--zen-accent-primary)] font-bold">
-              ◆ CAPRI // {theme.toUpperCase()}
+        <div className="zen-font-mono text-xs sm:text-sm space-y-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="px-2 py-0.5 bg-[var(--zen-surface-active)] text-[var(--zen-accent-primary)] font-bold">
+              ◆ zen
             </span>
-            ⟧══⟦
-            <span className="text-[var(--zen-accent-secondary)]">
-              ● GUARD: ARMED
+            <span className="text-[var(--zen-ink-primary)] font-semibold">
+              {cwdText}
             </span>
-            ⟧══⟦
-            <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
-            ⟧══⟦
-            <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
-            ⟧
+            <span className="text-[var(--zen-accent-secondary)]">⎇ main</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[var(--zen-ink-muted)]">╚══</span>
-            <span className="text-[var(--zen-accent-secondary)]">✔</span>
+          <div className="flex items-center gap-2 pl-1">
             <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
             {cmdText && (
               <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
@@ -759,28 +751,18 @@ capri-guard "SELECT * FROM users WHERE id = '1' OR '1'='1'"`,
     }
 
     return (
-      <div className="zen-font-mono text-xs sm:text-sm space-y-0.5">
-        <div className="text-[var(--zen-ink-muted)]">
-          ╭─[
-          <span className="px-1.5 py-0.5 bg-[var(--zen-accent-subtle)] text-[var(--zen-accent-primary)] font-bold">
-            ◆ CAPRI // {theme.toUpperCase()}
-          </span>
-          ]─[
-          <span className="text-[var(--zen-ink-primary)]">{cwdText}</span>
-          ]─[
-          <span className="text-[var(--zen-accent-secondary)]">⎇ main ✔</span>
-          ]─[
-          <span className="text-[var(--zen-accent-secondary)]">● GUARD</span>
-          ]─[<span>12ms · 00:25:14</span>]
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[var(--zen-ink-muted)]">╰─</span>
-          <span className="text-[var(--zen-accent-secondary)]">✔</span>
-          <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
-          {cmdText && (
-            <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
-          )}
-        </div>
+      <div className="zen-font-mono text-xs sm:text-sm flex items-center gap-2.5 flex-wrap">
+        <span className="px-2 py-0.5 bg-[var(--zen-surface-active)] text-[var(--zen-accent-primary)] font-bold">
+          ◆ zen
+        </span>
+        <span className="text-[var(--zen-ink-primary)] font-semibold">
+          {cwdText}
+        </span>
+        <span className="text-[var(--zen-accent-secondary)]">⎇ main</span>
+        <span className="text-[var(--zen-accent-primary)] font-bold">❯</span>
+        {cmdText && (
+          <span className="text-[var(--zen-ink-primary)]">{cmdText}</span>
+        )}
       </div>
     );
   };
