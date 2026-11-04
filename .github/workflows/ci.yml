@@ -1,0 +1,102 @@
+name: CI & Deploy zeN-Terminal (terminal.lpabst.dev)
+
+on:
+  push:
+    branches: [main, master, deploy]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "zen-terminal-ci-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Typecheck, Build, Pages & Hetzner Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Strict TypeScript Check
+        run: npx tsc -b
+
+      - name: Build zeN-Terminal
+        run: npm run build
+
+      - name: Configure GitHub Pages
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/deploy')
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/deploy')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+        continue-on-error: true
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image to GHCR
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER_LC}/zen-terminal"
+          docker build -f docker/Dockerfile -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" .
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:latest"
+
+      - name: Deploy to Hetzner Server (terminal.lpabst.dev)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+          HETZNER_SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+          HETZNER_PORT: ${{ secrets.HETZNER_PORT }}
+          HETZNER_DEPLOY_PATH: ${{ secrets.HETZNER_DEPLOY_PATH }}
+        run: |
+          if [ -z "$HETZNER_HOST" ] || [ -z "$HETZNER_SSH_KEY" ]; then
+            echo "::notice title=Hetzner Deploy Skipped::HETZNER_HOST or HETZNER_SSH_KEY secret is not configured in repository settings yet. GHCR image build & push succeeded."
+            exit 0
+          fi
+          SSH_USER="${HETZNER_USER:-root}"
+          SSH_PORT="${HETZNER_PORT:-22}"
+          DEPLOY_DIR="${HETZNER_DEPLOY_PATH:-/opt/zen-terminal}"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          trap 'rm -f ~/.ssh/id_deploy' EXIT
+          printf '%s\n' "$HETZNER_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$SSH_PORT" -H "$HETZNER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new "${SSH_USER}@${HETZNER_HOST}" "
+            set -e
+            if [ -d '${DEPLOY_DIR}/.git' ]; then
+              cd '${DEPLOY_DIR}'
+              git fetch --all
+              git reset --hard origin/main
+              docker compose up -d --build --remove-orphans
+            fi
+          "
