@@ -320,7 +320,11 @@ function Export-ZenWallpapers {
 
   foreach ($key in $Global:ZenThemes.Keys) {
     $t = $Global:ZenThemes[$key]
-    $outPath = Join-Path $wallDir "$($t.Id).png"
+    $legacyPath = Join-Path $wallDir "$($t.Id).png"
+    if (Test-Path $legacyPath) {
+      Remove-Item $legacyPath -Force -ErrorAction SilentlyContinue
+    }
+    $outPath = Join-Path $wallDir "$($t.Id)-4k.png"
     if ((-not $Force) -and (Test-Path $outPath)) { continue }
 
     $cParts  = $t.CanvasRgb -split ";"
@@ -348,7 +352,7 @@ function Export-ZenWallpapers {
     $majorAlpha = if ($isDark) { 30 } else { 30 }
 
     $path1 = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path1.AddEllipse(($w - 980), -280, 1280, 920)
+    $path1.AddEllipse(($w - 1100), -300, 1400, 1000)
     $pgb1 = New-Object System.Drawing.Drawing2D.PathGradientBrush($path1)
     $pgb1.CenterColor = [System.Drawing.Color]::FromArgb($glowAlpha1, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2])
     $pgb1.SurroundColors = @([System.Drawing.Color]::FromArgb(0, [int]$aParts[0], [int]$aParts[1], [int]$aParts[2]))
@@ -357,7 +361,7 @@ function Export-ZenWallpapers {
     $path1.Dispose()
 
     $path2 = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path2.AddEllipse(($w - 1900), 260, 1280, 960)
+    $path2.AddEllipse(($w - 2600), 300, 1600, 1200)
     $pgb2 = New-Object System.Drawing.Drawing2D.PathGradientBrush($path2)
     $pgb2.CenterColor = [System.Drawing.Color]::FromArgb($glowAlpha2, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2])
     $pgb2.SurroundColors = @([System.Drawing.Color]::FromArgb(0, [int]$sParts[0], [int]$sParts[1], [int]$sParts[2]))
@@ -509,7 +513,7 @@ function Sync-ZenWindowsTerminalSettings {
   Export-ZenTabIcons
   Export-ZenWallpapers
   $shaderPath    = Export-ZenShader
-  $wallpaperPath = Join-Path $ZenHomeDir "wallpapers\$($t.Id).png"
+  $wallpaperPath = Join-Path $ZenHomeDir "wallpapers\$($t.Id)-4k.png"
   $psIconPath    = Join-Path $ZenHomeDir "icons\$($t.Id)-ps.png"
   $cmdIconPath   = Join-Path $ZenHomeDir "icons\$($t.Id)-cmd.png"
 

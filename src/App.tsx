@@ -104,7 +104,7 @@ export default function App() {
               colorScheme: windowsTerminalSchemeName,
               icon: `~/.zen-terminal/icons/${theme}-ps.png`,
               suppressApplicationTitle: false,
-              backgroundImage: `~/.zen-terminal/wallpapers/${theme}.png`,
+              backgroundImage: `~/.zen-terminal/wallpapers/${theme}-4k.png`,
               backgroundImageOpacity: 0.94,
               backgroundImageStretchMode: 'none',
               backgroundImageAlignment: 'topRight',
