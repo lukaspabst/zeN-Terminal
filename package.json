@@ -13,7 +13,7 @@
   "dependencies": {
     "@react-three/fiber": "^9.1.0",
     "@react-three/postprocessing": "^3.0.4",
-    "@zen-ui-capri/system": "^1.2.0",
+    "@zen-ui-capri/system": "^1.2.1",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
